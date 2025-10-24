@@ -32,7 +32,7 @@ else:
         # Assign rank numbers explicitly
         power["Rank"] = range(1, len(power) + 1)
 
-        # Plot
+        # Plot horizontal bar chart
         fig = px.bar(
             power,
             x=score_col,
@@ -40,16 +40,19 @@ else:
             orientation="h",
             color=score_col,
             text="Rank",
-            color_continuous_scale="Viridis",  # normal orientation (1 = dark/high)
+            color_continuous_scale="Viridis",
             title="Power Rankings (1 = Highest)"
         )
 
+        # Top team (rank 1) appears at top
         fig.update_layout(
-            yaxis=dict(autorange="reversed"),  # top = highest rank
+            yaxis=dict(autorange="reversed"),
             showlegend=False,
             xaxis_title="Score",
             yaxis_title="Team",
         )
 
         st.plotly_chart(fig, use_container_width=True)
-        st.dataframe(power)
+
+        # ✅ Display table from 1 → 12 (top to bottom)
+        st.dataframe(power.sort_values("Rank", ascending=True).reset_index(drop=True))

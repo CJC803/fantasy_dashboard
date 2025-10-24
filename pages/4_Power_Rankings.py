@@ -32,6 +32,10 @@ else:
         # ✅ Sort descending so best scores are first
         power = power.sort_values(score_col, ascending=False).reset_index(drop=True)
 
+        # ✅ If 'Rank' already exists, rename it to avoid collision
+        if "Rank" in power.columns:
+            power = power.rename(columns={"Rank": "Original Rank"})
+
         # ✅ Assign Rank so 1 = best score
         power["Rank"] = range(1, len(power) + 1)
 
@@ -55,5 +59,6 @@ else:
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # === Table (1 = best) ===
+        # === Table (deduplicate column names + Rank 1 = top) ===
+        power = power.loc[:, ~power.columns.duplicated()]
         st.dataframe(power[["Rank", team_col, score_col]])

@@ -17,22 +17,21 @@ if power.empty:
 else:
     # 🔍 Detect columns dynamically
     team_col = next((c for c in power.columns if "team" in c.lower()), None)
-    score_col = next((c for c in power.columns if "score" in c.lower() or "power" in c.lower() or "rank" in c.lower()), None)
+    score_col = next(
+        (c for c in power.columns if "score" in c.lower() or "power" in c.lower() or "rank" in c.lower()),
+        None
+    )
 
     if not team_col or not score_col:
         st.error("Couldn't identify team or score columns. Please check your sheet headers.")
         st.dataframe(power.head())
     else:
-        # Clean numeric column
+        # Clean and prepare data
         power[score_col] = pd.to_numeric(power[score_col], errors="coerce")
-
-        # ✅ Sort so highest score = rank 1
         power = power.sort_values(score_col, ascending=False).reset_index(drop=True)
-
-        # Assign rank numbers explicitly
         power["Rank"] = range(1, len(power) + 1)
 
-        # Plot horizontal bar chart (rank 1 on top)
+        # === Bar Chart (Rank 1 on top, largest bar) ===
         fig = px.bar(
             power,
             x=score_col,
@@ -41,17 +40,17 @@ else:
             color=score_col,
             text="Rank",
             color_continuous_scale="Viridis",
-            title="Power Rankings (1 = Highest)"
+            title="🏆 Power Rankings (1 = Highest)"
         )
-
         fig.update_layout(
             yaxis=dict(autorange="reversed"),
             showlegend=False,
             xaxis_title="Score",
             yaxis_title="Team",
         )
-      st.plotly_chart(fig, use_container_width=True)
 
-        # ✅ Display table matching chart order (1 on top → 12 bottom)
-        display_df = power.sort_values("Rank", ascending=False).reset_index(drop=True)
-        st.dataframe(display_df)
+        st.plotly_chart(fig, use_container_width=True)
+
+        # === Table (Rank 1 on top, descending order visually) ===
+        table = power.sort_values("Rank", ascending=True).reset_index(drop=True)
+        st.dataframe(table[["Rank", team_col, score_col]])

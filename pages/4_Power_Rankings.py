@@ -11,7 +11,6 @@ data = st.session_state["data"]
 power = data["power"]
 
 st.title("⚡ Power Rankings")
-
 if power.empty:
     st.warning("No power ranking data found.")
 else:
@@ -20,6 +19,9 @@ else:
     score_col = next(
         (c for c in power.columns if "score" in c.lower() or "power" in c.lower() or "rank" in c.lower()),
         None
+    )
+    points_for_col = next(
+        (c for c in power.columns if "points for" in c.lower() or "pf" == c.lower().strip()), None
     )
 
     if not team_col or not score_col:
@@ -30,8 +32,10 @@ else:
         power.columns = power.columns.str.strip()
         power = power.loc[:, ~power.columns.duplicated()]
 
-        # ✅ Clean numeric column
+        # ✅ Clean numeric columns
         power[score_col] = pd.to_numeric(power[score_col], errors="coerce")
+        if points_for_col:
+            power[points_for_col] = pd.to_numeric(power[points_for_col], errors="coerce")
 
         # ✅ Sort descending so best scores are first
         power = power.sort_values(score_col, ascending=False).reset_index(drop=True)
@@ -45,6 +49,11 @@ else:
 
         # === Chart (Rank 1 = top, biggest bar) ===
         power = power.sort_values("Rank", ascending=True)
+
+        hover_cols = [team_col, score_col]
+        if points_for_col:
+            hover_cols.append(points_for_col)
+
         fig = px.bar(
             power,
             x=score_col,
@@ -52,6 +61,7 @@ else:
             orientation="h",
             color=score_col,
             text="Rank",
+            hover_data=hover_cols,
             color_continuous_scale="Viridis",
             title="🏆 Power Rankings (1 = Highest)"
         )
@@ -62,15 +72,17 @@ else:
         )
 
         st.plotly_chart(fig, use_container_width=True)
+
         # === Table (clean and safe) ===
         subset_cols = ["Rank", team_col, score_col]
+        if points_for_col:
+            subset_cols.append(points_for_col)
 
-        # Remove any accidental duplicates and strip spaces
         subset_cols = pd.unique(subset_cols).tolist()
         df_display = power[subset_cols].copy()
         df_display.columns = [str(c).strip() for c in df_display.columns]
 
-        # 🔐 Deduplicate column names manually if needed
+        # Deduplicate manually if needed
         seen = {}
         new_cols = []
         for c in df_display.columns:
@@ -82,7 +94,6 @@ else:
                 new_cols.append(c)
         df_display.columns = new_cols
 
-        # ✅ Show table sorted by Rank ascending
         df_display = df_display.sort_values("Rank", ascending=True).reset_index(drop=True)
 
         st.dataframe(df_display, use_container_width=True)

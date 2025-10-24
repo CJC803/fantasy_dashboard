@@ -15,7 +15,7 @@ st.title("⚡ Power Rankings")
 if power.empty:
     st.warning("No power ranking data found.")
 else:
-    # 🔍 Try to detect key columns dynamically
+    # 🔍 Detect columns dynamically
     team_col = next((c for c in power.columns if "team" in c.lower()), None)
     score_col = next((c for c in power.columns if "score" in c.lower() or "power" in c.lower() or "rank" in c.lower()), None)
 
@@ -26,26 +26,29 @@ else:
         # Clean numeric column
         power[score_col] = pd.to_numeric(power[score_col], errors="coerce")
 
-        # Sort so #1 (highest score) is on top
-        power = power.sort_values(score_col, ascending=True)
+        # ✅ Sort so highest score = rank 1
+        power = power.sort_values(score_col, ascending=False).reset_index(drop=True)
+
+        # Assign rank numbers explicitly
+        power["Rank"] = range(1, len(power) + 1)
 
         # Plot
         fig = px.bar(
             power,
             x=score_col,
             y=team_col,
-            orientation="h",  # horizontal bars
+            orientation="h",
             color=score_col,
-            text=score_col,
-            color_continuous_scale="Viridis_r",  # reversed colors
+            text="Rank",
+            color_continuous_scale="Viridis",  # normal orientation (1 = dark/high)
             title="Power Rankings (1 = Highest)"
         )
 
         fig.update_layout(
-            yaxis=dict(categoryorder="total ascending"),  # top = rank 1
+            yaxis=dict(autorange="reversed"),  # top = highest rank
             showlegend=False,
             xaxis_title="Score",
-            yaxis_title="Team"
+            yaxis_title="Team",
         )
 
         st.plotly_chart(fig, use_container_width=True)

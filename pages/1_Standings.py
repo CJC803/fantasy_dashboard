@@ -42,8 +42,8 @@ else:
     go.Bar(
         x=standings[team_col],
         y=standings[win_col],
-        text=standings["Rank"],
-        textposition="outside",  # ✅ valid for vertical bars        textfont=dict(size=14, color="black"),
+       -- text=standings["Rank"],
+       -- textposition="outside",  # ✅ valid for vertical bars        textfont=dict(size=14, color="black"),
         marker_color=colors,
     )
 )

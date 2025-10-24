@@ -65,27 +65,22 @@ else:
                 "F2": "🏆 Winner of 2 vs 3",
                 "W": "🏆 Champion",
             }
-
-            # Draw connecting lines (like real bracket)
-            lines = [
-                # Round 1 -> Semifinal 1
-                ((0.5, 2), (2, 3.5)),
-                # Semifinal 1 -> Final
-                ((2.5, 3.5), (4, 3)),
-                # Semifinal 2 (2 vs 3) -> Final
-                ((2.5, 1), (4, 1)),
-                # Final -> Champion
-                ((4.5, 2), (6, 2)),
-            ]
-            for (x_pair, y_pair) in lines:
-                fig.add_shape(
-                    type="line",
-                    x0=x_pair[0],
-                    y0=y_pair[0],
-                    x1=x_pair[1],
-                    y1=y_pair[1],
-                    line=dict(color="gray", width=2),
-                )
+# Draw connecting lines (like real bracket)
+lines = [
+    ((0.5, 2), (2, 3.5)),
+    ((2.5, 3.5), (4, 3)),
+    ((2.5, 1), (4, 1)),
+    ((4.5, 2), (6, 2)),
+]
+for (x_pair, y_pair) in lines:
+    fig.add_shape(
+        type="line",
+        x0=x_pair[0],
+        y0=y_pair[0],
+        x1=x_pair[1],
+        y1=y_pair[1],
+        line=dict(color="gray", width=2),
+    )
 
             # Plot team positions
             for key, (x, y) in nodes.items():

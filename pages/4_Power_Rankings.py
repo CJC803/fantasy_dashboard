@@ -26,15 +26,17 @@ else:
         st.error("Couldn't identify team or score columns. Please check your sheet headers.")
         st.dataframe(power.head())
     else:
-        # Clean and prepare data
+        # ✅ Clean numeric column
         power[score_col] = pd.to_numeric(power[score_col], errors="coerce")
+
+        # ✅ Sort descending so best scores are first
         power = power.sort_values(score_col, ascending=False).reset_index(drop=True)
+
+        # ✅ Assign Rank so 1 = best score
         power["Rank"] = range(1, len(power) + 1)
 
-         # === Bar Chart (Rank 1 = top, largest bar) ===
-        # Sort ascending by Rank so rank 1 comes first
+        # === Chart (Rank 1 = top, biggest bar) ===
         power = power.sort_values("Rank", ascending=True)
-
         fig = px.bar(
             power,
             x=score_col,
@@ -45,8 +47,6 @@ else:
             color_continuous_scale="Viridis",
             title="🏆 Power Rankings (1 = Highest)"
         )
-
-        # 👇 REMOVE autorange reversal so order matches table
         fig.update_layout(
             showlegend=False,
             xaxis_title="Score",
@@ -55,6 +55,5 @@ else:
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # === Table (Rank 1 on top, descending order visually) ===
-        table = power.sort_values("Rank", ascending=True).reset_index(drop=True)
-        st.dataframe(table[["Rank", team_col, score_col]])
+        # === Table (1 = best) ===
+        st.dataframe(power[["Rank", team_col, score_col]])

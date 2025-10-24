@@ -36,17 +36,31 @@ else:
         st.dataframe(injuries, use_container_width=True)
 
         # === Radar Chart: Injured Players by Team ===
-        if team_col:
-            injury_counts = injuries[team_col].value_counts().reset_index()
-            injury_counts.columns = ["Team", "Injured Players"]
+if team_col:
+    injury_counts = injuries[team_col].value_counts().reset_index()
+    injury_counts.columns = ["Team", "Injured Players"]
 
-            fig = px.line_polar(
-                injury_counts,
-                r="Injured Players",
-                theta="Team",
-                line_close=True,
-                title="🕸️ Injured Players by Team",
-            )
-            fig.update_traces(fill='toself', line_color="crimson")
-            fig.update_layout(polar=dict(radialaxis=dict(visible=True, showticklabels=True)))
-            st.plotly_chart(fig, use_container_width=True)
+    # Add hover info to display the number of injured players per team
+    fig = px.line_polar(
+        injury_counts,
+        r="Injured Players",
+        theta="Team",
+        line_close=True,
+        title="🕸️ Injured Players by Team",
+        hover_name="Team",  # base hover
+        hover_data={"Injured Players": True},  # explicitly show values
+    )
+
+    # Make hover text show "Team: X | Injured: Y"
+    fig.update_traces(
+        fill="toself",
+        line_color="crimson",
+        hovertemplate="<b>%{theta}</b><br>Injured Players: %{r}<extra></extra>"
+    )
+
+    fig.update_layout(
+        polar=dict(radialaxis=dict(visible=True, showticklabels=True)),
+        hoverlabel=dict(bgcolor="white", font_size=13, font_color="black"),
+    )
+
+    st.plotly_chart(fig, use_container_width=True)

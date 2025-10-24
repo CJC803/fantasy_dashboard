@@ -22,6 +22,26 @@ else:
     if not team_col or not win_col:
         st.error("Couldn't identify team or win column. Please check your sheet headers.")
         st.dataframe(standings.head())
+    # === Bar Chart of Current Standings ===
+fig_chart = go.Figure(
+    go.Bar(
+        x=standings[win_col],
+        y=standings[team_col],
+        orientation="h",
+        text=standings["Rank"],
+        textposition="auto",
+        marker=dict(color=standings["Rank"], colorscale="Viridis", showscale=False),
+    )
+)
+fig_chart.update_layout(
+    title="📈 Team Performance by Record",
+    xaxis_title=win_col,
+    yaxis_title="Team",
+    yaxis=dict(autorange="reversed"),  # top team at top
+    height=400,
+    margin=dict(t=40, b=40, l=40, r=20),
+)
+st.plotly_chart(fig_chart, use_container_width=True)
     else:
         # --- Prepare data ---
         standings[win_col] = pd.to_numeric(standings[win_col], errors="coerce")

@@ -28,48 +28,45 @@ else:
         standings = standings.sort_values(win_col, ascending=False).reset_index(drop=True)
         standings["Rank"] = range(1, len(standings) + 1)
 
-       # === Vertical Bar Chart of Current Standings ===
-colors = []
-for r in standings["Rank"]:
-    if r in [4, 5]:  # Play-in teams
-        colors.append("orange")
-    elif r <= 3:      # Playoff locks
-        colors.append("green")
-    else:             # Outside playoff
-        colors.append("lightgray")
+        # === Vertical Bar Chart of Current Standings ===
+        colors = []
+        for r in standings["Rank"]:
+            if r in [4, 5]:  # Play-in teams
+                colors.append("orange")
+            elif r <= 3:      # Playoff locks
+                colors.append("green")
+            else:             # Outside playoff
+                colors.append("lightgray")
 
-fig_chart = go.Figure(
-    go.Bar(
-        x=standings[team_col],
-        y=standings[win_col],
-        marker_color=colors
-    )
-)
+        fig_chart = go.Figure(
+            go.Bar(
+                x=standings[team_col],
+                y=standings[win_col],
+                marker_color=colors
+            )
+        )
 
-# Add playoff cutoff marker (between 5th and 6th)
-cutoff_y = standings.loc[5, win_col] - 0.05 if len(standings) > 5 else None
-if cutoff_y:
-    fig_chart.add_hline(
-        y=cutoff_y,
-        line_dash="dash",
-        line_color="red",
-        annotation_text="Playoff Cutoff",
-        annotation_position="top right",
-        annotation_font_color="red",
-    )
+        # Add playoff cutoff marker (between 5th and 6th)
+        cutoff_y = standings.loc[5, win_col] - 0.05 if len(standings) > 5 else None
+        if cutoff_y:
+            fig_chart.add_hline(
+                y=cutoff_y,
+                line_dash="dash",
+                line_color="red",
+                annotation_text="Playoff Cutoff",
+                annotation_position="top right",
+                annotation_font_color="red",
+            )
 
-fig_chart.update_layout(
-    title="📈 Team Performance by Record",
-    xaxis_title="Team",
-    yaxis_title=win_col,
-    height=450,
-    margin=dict(t=40, b=40, l=40, r=20),
-)
-st.plotly_chart(fig_chart, use_container_width=True)
+        fig_chart.update_layout(
+            title="📈 Team Performance by Record",
+            xaxis_title="Team",
+            yaxis_title=win_col,
+            height=450,
+            margin=dict(t=40, b=40, l=40, r=20),
+        )
+        st.plotly_chart(fig_chart, use_container_width=True)
 
-    
-
-       
         # === Playoff Bracket ===
         top5 = standings.head(5)
         team_names = top5[team_col].tolist()

@@ -50,9 +50,9 @@ else:
             xaxis_title="Score",
             yaxis_title="Team",
         )
-
         st.plotly_chart(fig, use_container_width=True)
 
-        # ✅ Display table matching chart order (1 on top → 12 bottom)
-        display_df = power.sort_values("Rank", ascending=False).reset_index(drop=True)
+        # ✅ Display table in proper order (Rank 1 at top → 12 at bottom)
+        display_df = power.sort_values("Rank", ascending=True).reset_index(drop=True)
         st.dataframe(display_df)
+

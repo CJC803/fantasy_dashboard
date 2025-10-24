@@ -39,26 +39,30 @@ else:
                 right_on=["week", "opp"],
                 suffixes=("_team", "_opp"),
             )
-            merged = merged[merged["team_team"] < merged["team_opp"]]  # avoid duplicates
 
-            # Winner / margin
+            # Avoid duplicate pairs
+            merged = merged[merged["team_team"] < merged["team_opp"]].copy()
+
+            # Winner / margin columns
             merged["Winner"] = merged.apply(
                 lambda x: x["team_team"] if x["pts_team"] > x["pts_opp"] else x["team_opp"],
                 axis=1,
             )
             merged["Margin"] = (merged["pts_team"] - merged["pts_opp"]).abs().round(2)
 
-            # Display weekly matchups
-            display_cols = ["week", "team_team", "pts_team", "team_opp", "pts_opp", "Winner", "Margin"]
-            merged = merged.rename(
-                columns={
-                    "team_team": "Team",
-                    "pts_team": "Points",
-                    "team_opp": "Opponent",
-                    "pts_opp": "Opp Points",
-                }
-            )[display_cols]
-            st.dataframe(merged, use_container_width=True)
+            # Rename columns AFTER checking they exist
+            rename_map = {
+                "team_team": "Team",
+                "pts_team": "Points",
+                "team_opp": "Opponent",
+                "pts_opp": "Opp Points",
+            }
+            merged = merged.rename(columns=rename_map)
+
+            # Ensure columns exist safely
+            valid_cols = [c for c in ["week", "Team", "Points", "Opponent", "Opp Points", "Winner", "Margin"] if c in merged.columns]
+
+            st.dataframe(merged[valid_cols], use_container_width=True)
 
             # === Chart: Points distribution ===
             fig = px.box(

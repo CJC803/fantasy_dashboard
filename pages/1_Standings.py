@@ -85,14 +85,12 @@ fig.update_layout(
     xaxis=dict(visible=False),
     yaxis=dict(visible=False),
     showlegend=False,
-    height=600,
-    margin=dict(t=60, b=20, l=20, r=20),
+    height=400,  # smaller height (was 600)
+    margin=dict(t=40, b=20, l=20, r=20),
     annotations=[
-        dict(x=0, y=4.5, text="Week 15 – Play-In", showarrow=False, font=dict(size=12, color="gray")),
-        dict(x=2, y=5, text="Week 16 – Semifinals", showarrow=False, font=dict(size=12, color="gray")),
-        dict(x=4, y=4.5, text="Week 17 – Championship", showarrow=False, font=dict(size=12, color="gray")),
+        dict(x=0, y=4.2, text="Week 15 – Play-In", showarrow=False, font=dict(size=10, color="gray")),
+        dict(x=2, y=4.6, text="Week 16 – Semifinals", showarrow=False, font=dict(size=10, color="gray")),
+        dict(x=4, y=4.2, text="Week 17 – Championship", showarrow=False, font=dict(size=10, color="gray")),
     ],
 )
-
-st.plotly_chart(fig, use_container_width=True)
  

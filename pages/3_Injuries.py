@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
 st.title("🚑 Injury Report")
 
@@ -9,7 +10,7 @@ injuries = data["injuries"]
 if injuries.empty:
     st.info("No injury data available.")
 else:
-    # Normalize column names for consistency
+    # Normalize column names
     injuries.columns = injuries.columns.str.strip().str.lower()
 
     # === Filter out "active" or "healthy" players ===
@@ -33,3 +34,19 @@ else:
 
         # === Display injuries ===
         st.dataframe(injuries, use_container_width=True)
+
+        # === Radar Chart: Injured Players by Team ===
+        if team_col:
+            injury_counts = injuries[team_col].value_counts().reset_index()
+            injury_counts.columns = ["Team", "Injured Players"]
+
+            fig = px.line_polar(
+                injury_counts,
+                r="Injured Players",
+                theta="Team",
+                line_close=True,
+                title="🕸️ Injured Players by Team",
+            )
+            fig.update_traces(fill='toself', line_color="crimson")
+            fig.update_layout(polar=dict(radialaxis=dict(visible=True, showticklabels=True)))
+            st.plotly_chart(fig, use_container_width=True)

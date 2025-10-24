@@ -22,36 +22,38 @@ else:
     if not team_col or not win_col:
         st.error("Couldn't identify team or win column. Please check your sheet headers.")
         st.dataframe(standings.head())
-    # === Bar Chart of Current Standings ===
-fig_chart = go.Figure(
-    go.Bar(
-        x=standings[win_col],
-        y=standings[team_col],
-        orientation="h",
-        text=standings["Rank"],
-        textposition="auto",
-        marker=dict(color=standings["Rank"], colorscale="Viridis", showscale=False),
-    )
-)
-fig_chart.update_layout(
-    title="📈 Team Performance by Record",
-    xaxis_title=win_col,
-    yaxis_title="Team",
-    yaxis=dict(autorange="reversed"),  # top team at top
-    height=400,
-    margin=dict(t=40, b=40, l=40, r=20),
-)
-st.plotly_chart(fig_chart, use_container_width=True)
     else:
         # --- Prepare data ---
         standings[win_col] = pd.to_numeric(standings[win_col], errors="coerce")
         standings = standings.sort_values(win_col, ascending=False).reset_index(drop=True)
         standings["Rank"] = range(1, len(standings) + 1)
 
+        # === Bar Chart of Current Standings ===
+        fig_chart = go.Figure(
+            go.Bar(
+                x=standings[win_col],
+                y=standings[team_col],
+                orientation="h",
+                text=standings["Rank"],
+                textposition="auto",
+                marker=dict(color=standings["Rank"], colorscale="Viridis", showscale=False),
+            )
+        )
+        fig_chart.update_layout(
+            title="📈 Team Performance by Record",
+            xaxis_title=win_col,
+            yaxis_title="Team",
+            yaxis=dict(autorange="reversed"),
+            height=400,
+            margin=dict(t=40, b=40, l=40, r=20),
+        )
+        st.plotly_chart(fig_chart, use_container_width=True)
+
+        # === Standings Table ===
         st.subheader("📊 Current Standings")
         st.dataframe(standings[[team_col, win_col, "Rank"]], use_container_width=True)
 
-        # === Create playoff bracket (Top 5) ===
+        # === Playoff Bracket ===
         top5 = standings.head(5)
         team_names = top5[team_col].tolist()
 
@@ -59,23 +61,12 @@ st.plotly_chart(fig_chart, use_container_width=True)
             st.warning("Need at least 5 teams to draw the playoff bracket.")
         else:
             fig = go.Figure()
-
-            # Define node positions (x, y)
             nodes = {
-                # Round 1
-                "4": (0, 3),
-                "5": (0, 1),
-                # Semifinals
-                "1": (2, 4),
-                "2": (2, 2),
-                "3": (2, 0),
-                # Finals
-                "F1": (4, 3),
-                "F2": (4, 1),
-                # Winner
+                "4": (0, 3), "5": (0, 1),
+                "1": (2, 4), "2": (2, 2), "3": (2, 0),
+                "F1": (4, 3), "F2": (4, 1),
                 "W": (6, 2),
             }
-
             labels = {
                 "4": f"4️⃣ {team_names[3]}",
                 "5": f"5️⃣ {team_names[4]}",
@@ -86,32 +77,30 @@ st.plotly_chart(fig_chart, use_container_width=True)
                 "F2": "🏆 Winner of 2 vs 3",
                 "W": "🏆 Champion",
             }
-# --- Plot team positions (no lines) ---
-for key, (x, y) in nodes.items():
-    fig.add_trace(
-        go.Scatter(
-            x=[x],
-            y=[y],
-            mode="text",
-            text=[labels[key]],
-            textfont=dict(size=16),
-            hoverinfo="none",
-        )
-    )
 
-# --- Clean minimalist layout ---
-fig.update_layout(
-    title="🏈 Fantasy Playoff Bracket (Top 5 Teams)",
-    xaxis=dict(visible=False),
-    yaxis=dict(visible=False),
-    showlegend=False,
-    height=400,  # smaller height (was 600)
-    margin=dict(t=40, b=20, l=20, r=20),
-    annotations=[
-        dict(x=0, y=4.2, text="Week 15 – Play-In", showarrow=False, font=dict(size=10, color="gray")),
-        dict(x=2, y=4.6, text="Week 16 – Semifinals", showarrow=False, font=dict(size=10, color="gray")),
-        dict(x=4, y=4.2, text="Week 17 – Championship", showarrow=False, font=dict(size=10, color="gray")),
-    ],
-)
-st.plotly_chart(fig, use_container_width=True)
+            for key, (x, y) in nodes.items():
+                fig.add_trace(
+                    go.Scatter(
+                        x=[x],
+                        y=[y],
+                        mode="text",
+                        text=[labels[key]],
+                        textfont=dict(size=16),
+                        hoverinfo="none",
+                    )
+                )
 
+            fig.update_layout(
+                title="🏈 Fantasy Playoff Bracket (Top 5 Teams)",
+                xaxis=dict(visible=False),
+                yaxis=dict(visible=False),
+                showlegend=False,
+                height=400,
+                margin=dict(t=40, b=20, l=20, r=20),
+                annotations=[
+                    dict(x=0, y=4.2, text="Week 15 – Play-In", showarrow=False, font=dict(size=10, color="gray")),
+                    dict(x=2, y=4.6, text="Week 16 – Semifinals", showarrow=False, font=dict(size=10, color="gray")),
+                    dict(x=4, y=4.2, text="Week 17 – Championship", showarrow=False, font=dict(size=10, color="gray")),
+                ],
+            )
+            st.plotly_chart(fig, use_container_width=True)

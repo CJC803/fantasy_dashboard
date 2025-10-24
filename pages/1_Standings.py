@@ -43,8 +43,7 @@ else:
         x=standings[team_col],
         y=standings[win_col],
         text=standings["Rank"],
-        textposition="top center",  # ⬆️ move numbers to top of bars
-        textfont=dict(size=14, color="black"),
+        textposition="outside",  # ✅ valid for vertical bars        textfont=dict(size=14, color="black"),
         marker_color=colors,
     )
 )

@@ -66,51 +66,33 @@ else:
                 "F2": "🏆 Winner of 2 vs 3",
                 "W": "🏆 Champion",
             }
+# --- Plot team positions (no lines) ---
+for key, (x, y) in nodes.items():
+    fig.add_trace(
+        go.Scatter(
+            x=[x],
+            y=[y],
+            mode="text",
+            text=[labels[key]],
+            textfont=dict(size=16),
+            hoverinfo="none",
+        )
+    )
 
-            # --- Draw connecting lines (proper indentation) ---
-            lines = [
-                ((0.5, 2), (2, 3.5)),
-                ((2.5, 3.5), (4, 3)),
-                ((2.5, 1), (4, 1)),
-                ((4.5, 2), (6, 2)),
-            ]
+# --- Clean minimalist layout ---
+fig.update_layout(
+    title="🏈 Fantasy Playoff Bracket (Top 5 Teams)",
+    xaxis=dict(visible=False),
+    yaxis=dict(visible=False),
+    showlegend=False,
+    height=600,
+    margin=dict(t=60, b=20, l=20, r=20),
+    annotations=[
+        dict(x=0, y=4.5, text="Week 15 – Play-In", showarrow=False, font=dict(size=12, color="gray")),
+        dict(x=2, y=5, text="Week 16 – Semifinals", showarrow=False, font=dict(size=12, color="gray")),
+        dict(x=4, y=4.5, text="Week 17 – Championship", showarrow=False, font=dict(size=12, color="gray")),
+    ],
+)
 
-            for (x_pair, y_pair) in lines:
-                fig.add_shape(
-                    type="line",
-                    x0=x_pair[0],
-                    y0=y_pair[0],
-                    x1=x_pair[1],
-                    y1=y_pair[1],
-                    line=dict(color="gray", width=2),
-                )
-
-            # --- Plot team positions ---
-            for key, (x, y) in nodes.items():
-                fig.add_trace(
-                    go.Scatter(
-                        x=[x],
-                        y=[y],
-                        mode="text",
-                        text=[labels[key]],
-                        textfont=dict(size=14),
-                        hoverinfo="none",
-                    )
-                )
-
-            # --- Layout like real bracket ---
-            fig.update_layout(
-                title="🏈 Fantasy Playoff Bracket (5 Teams – True Elimination)",
-                xaxis=dict(visible=False),
-                yaxis=dict(visible=False),
-                showlegend=False,
-                height=600,
-                margin=dict(t=60, b=20, l=20, r=20),
-                annotations=[
-                    dict(x=0, y=4.5, text="Week 15 – Play-In", showarrow=False, font=dict(size=12, color="gray")),
-                    dict(x=2, y=5, text="Week 16 – Semifinals", showarrow=False, font=dict(size=12, color="gray")),
-                    dict(x=4, y=4.5, text="Week 17 – Championship", showarrow=False, font=dict(size=12, color="gray")),
-                ],
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True)
+ 

@@ -1,24 +1,45 @@
 import streamlit as st
+import pandas as pd
 import plotly.express as px
+from utils import load_all
+
+# 🔒 Ensure session_state is populated
+if "data" not in st.session_state:
+    st.session_state["data"] = load_all()
 
 data = st.session_state["data"]
 power = data["power"]
 
-st.title("\u26a1 Power Rankings")
+st.title("⚡ Power Rankings")
 
-if not power.empty:
-    if "Score" in power.columns:
-        power = power.sort_values("Score", ascending=False)
-    fig = px.bar(
-        power,
-        x="Team" if "Team" in power.columns else power.columns[0],
-        y="Score",
-        color="Score",
-        color_continuous_scale="Viridis",
-        text="Score",
-        title="Power Ranking Scores"
-    )
-    fig.update_layout(showlegend=False)
-    st.plotly_chart(fig, use_container_width=True)
+if power.empty:
+    st.warning("No power ranking data found.")
+else:
+    # 🔍 Try to detect key columns dynamically
+    team_col = next((c for c in power.columns if "team" in c.lower()), None)
+    score_col = next((c for c in power.columns if "score" in c.lower() or "power" in c.lower() or "rank" in c.lower()), None)
 
-st.dataframe(power)
+    if not team_col or not score_col:
+        st.error("Couldn't identify team or score columns. Please check your sheet headers.")
+        st.dataframe(power.head())
+    else:
+        # Clean numeric column
+        power[score_col] = pd.to_numeric(power[score_col], errors="coerce")
+
+        # Sort by power score descending
+        power = power.sort_values(score_col, ascending=False)
+
+        # Plot
+        fig = px.bar(
+            power,
+            x=team_col,
+            y=score_col,
+            color=score_col,
+            text=score_col,
+            color_continuous_scale="Viridis",
+            title="Power Ranking Scores"
+        )
+        fig.update_layout(showlegend=False, xaxis_title="Team", yaxis_title="Score")
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.dataframe(power)

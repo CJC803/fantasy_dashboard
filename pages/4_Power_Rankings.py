@@ -26,20 +26,27 @@ else:
         # Clean numeric column
         power[score_col] = pd.to_numeric(power[score_col], errors="coerce")
 
-        # Sort by power score descending
-        power = power.sort_values(score_col, ascending=False)
+        # Sort so #1 (highest score) is on top
+        power = power.sort_values(score_col, ascending=True)
 
         # Plot
         fig = px.bar(
             power,
-            x=team_col,
-            y=score_col,
+            x=score_col,
+            y=team_col,
+            orientation="h",  # horizontal bars
             color=score_col,
             text=score_col,
-            color_continuous_scale="Viridis",
-            title="Power Ranking Scores"
+            color_continuous_scale="Viridis_r",  # reversed colors
+            title="Power Rankings (1 = Highest)"
         )
-        fig.update_layout(showlegend=False, xaxis_title="Team", yaxis_title="Score")
-        st.plotly_chart(fig, use_container_width=True)
 
+        fig.update_layout(
+            yaxis=dict(categoryorder="total ascending"),  # top = rank 1
+            showlegend=False,
+            xaxis_title="Score",
+            yaxis_title="Team"
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
         st.dataframe(power)

@@ -62,14 +62,27 @@ else:
         )
 
         st.plotly_chart(fig, use_container_width=True)
-
-        # === Table (guaranteed unique columns) ===
+        # === Table (clean and safe) ===
         subset_cols = ["Rank", team_col, score_col]
-        # Ensure uniqueness in subset
+
+        # Remove any accidental duplicates and strip spaces
         subset_cols = pd.unique(subset_cols).tolist()
-
-        # Rename duplicates if any sneaked through
         df_display = power[subset_cols].copy()
-        df_display.columns = pd.io.parsers.ParserBase({'names': df_display.columns})._maybe_dedup_names(df_display.columns)
+        df_display.columns = [str(c).strip() for c in df_display.columns]
 
-        st.dataframe(df_display)
+        # 🔐 Deduplicate column names manually if needed
+        seen = {}
+        new_cols = []
+        for c in df_display.columns:
+            if c in seen:
+                seen[c] += 1
+                new_cols.append(f"{c}_{seen[c]}")
+            else:
+                seen[c] = 0
+                new_cols.append(c)
+        df_display.columns = new_cols
+
+        # ✅ Show table sorted by Rank ascending
+        df_display = df_display.sort_values("Rank", ascending=True).reset_index(drop=True)
+
+        st.dataframe(df_display, use_container_width=True)

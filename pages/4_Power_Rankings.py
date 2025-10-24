@@ -26,6 +26,10 @@ else:
         st.error("Couldn't identify team or score columns. Please check your sheet headers.")
         st.dataframe(power.head())
     else:
+        # 🧹 Clean column names
+        power.columns = power.columns.str.strip()
+        power = power.loc[:, ~power.columns.duplicated()]
+
         # ✅ Clean numeric column
         power[score_col] = pd.to_numeric(power[score_col], errors="coerce")
 
@@ -59,6 +63,13 @@ else:
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # === Table (deduplicate column names + Rank 1 = top) ===
-        power = power.loc[:, ~power.columns.duplicated()]
-        st.dataframe(power[["Rank", team_col, score_col]])
+        # === Table (guaranteed unique columns) ===
+        subset_cols = ["Rank", team_col, score_col]
+        # Ensure uniqueness in subset
+        subset_cols = pd.unique(subset_cols).tolist()
+
+        # Rename duplicates if any sneaked through
+        df_display = power[subset_cols].copy()
+        df_display.columns = pd.io.parsers.ParserBase({'names': df_display.columns})._maybe_dedup_names(df_display.columns)
+
+        st.dataframe(df_display)

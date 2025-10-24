@@ -31,7 +31,10 @@ else:
         power = power.sort_values(score_col, ascending=False).reset_index(drop=True)
         power["Rank"] = range(1, len(power) + 1)
 
-        # === Bar Chart (Rank 1 on top, largest bar) ===
+         # === Bar Chart (Rank 1 = top, largest bar) ===
+        # Sort ascending by Rank so rank 1 comes first
+        power = power.sort_values("Rank", ascending=True)
+
         fig = px.bar(
             power,
             x=score_col,
@@ -42,11 +45,12 @@ else:
             color_continuous_scale="Viridis",
             title="🏆 Power Rankings (1 = Highest)"
         )
+
+        # 👇 REMOVE autorange reversal so order matches table
         fig.update_layout(
-            yaxis=dict(autorange="reversed"),
             showlegend=False,
             xaxis_title="Score",
-            yaxis_title="Team",
+            yaxis_title="Team"
         )
 
         st.plotly_chart(fig, use_container_width=True)

@@ -6,7 +6,7 @@ from utils import week_selector
 data = st.session_state["data"]
 matchups = data["matchups"]
 
-st.title("\ud83d\udcc5 Matchup Summary")
+st.title("📅 Matchup Summary")
 
 if matchups.empty:
     st.info("No matchup data available.")

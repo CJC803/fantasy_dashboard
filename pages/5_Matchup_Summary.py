@@ -3,76 +3,100 @@ import pandas as pd
 import plotly.express as px
 from utils import week_selector
 
+st.title("📅 Matchup Summary")
+
 data = st.session_state["data"]
 matchups = data["matchups"]
 
-st.title("📅 Matchup Summary")
-
 if matchups.empty:
-    st.info("No matchup data available.")
+    st.warning("No matchup data available.")
 else:
-    week = week_selector(matchups, week_col="Week")
-    if week is not None:
-        week_df = matchups[matchups["Week"] == week]
-        st.subheader(f"Results \u2013 Week {week}")
-        st.dataframe(week_df)
+    # Normalize headers
+    matchups.columns = matchups.columns.str.strip().str.lower()
 
-        if {"HomeTeam", "HomePoints", "AwayTeam", "AwayPoints"}.issubset(week_df.columns):
-            melted = week_df.melt(
-                id_vars=["Week"],
-                value_vars=["HomePoints", "AwayPoints"],
-                var_name="Side",
-                value_name="Points"
+    # Expect: week, team, opp, pts
+    required_cols = {"week", "team", "opp", "pts"}
+    if not required_cols.issubset(matchups.columns):
+        st.error(f"Missing expected columns: {required_cols - set(matchups.columns)}")
+        st.dataframe(matchups.head())
+    else:
+        # Convert types
+        matchups["week"] = pd.to_numeric(matchups["week"], errors="coerce")
+        matchups["pts"] = pd.to_numeric(matchups["pts"], errors="coerce")
+
+        # Week selector
+        week = week_selector(matchups, week_col="week")
+
+        if week is not None:
+            st.subheader(f"Results – Week {week}")
+            week_df = matchups[matchups["week"] == week].copy()
+
+            # === Build matchup pairs ===
+            merged = pd.merge(
+                week_df,
+                week_df,
+                left_on=["week", "team"],
+                right_on=["week", "opp"],
+                suffixes=("_team", "_opp"),
             )
+            merged = merged[merged["team_team"] < merged["team_opp"]]  # avoid duplicates
+
+            # Winner / margin
+            merged["Winner"] = merged.apply(
+                lambda x: x["team_team"] if x["pts_team"] > x["pts_opp"] else x["team_opp"],
+                axis=1,
+            )
+            merged["Margin"] = (merged["pts_team"] - merged["pts_opp"]).abs().round(2)
+
+            # Display weekly matchups
+            display_cols = ["week", "team_team", "pts_team", "team_opp", "pts_opp", "Winner", "Margin"]
+            merged = merged.rename(
+                columns={
+                    "team_team": "Team",
+                    "pts_team": "Points",
+                    "team_opp": "Opponent",
+                    "pts_opp": "Opp Points",
+                }
+            )[display_cols]
+            st.dataframe(merged, use_container_width=True)
+
+            # === Chart: Points distribution ===
             fig = px.box(
-                melted,
-                x="Side",
-                y="Points",
-                title=f"Score Distribution \u2013 Week {week}",
-                color="Side"
+                week_df,
+                x="week",
+                y="pts",
+                points="all",
+                title=f"Score Distribution – Week {week}",
+                color_discrete_sequence=["#4C78A8"],
             )
+            fig.update_layout(showlegend=False, xaxis_title="", yaxis_title="Points")
             st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("### \U0001f9ae Points For / Points Against (Cumulative)")
-    if {"HomeTeam","HomePoints","AwayTeam","AwayPoints"}.issubset(matchups.columns):
-        pf = pd.concat([
-            matchups[["HomeTeam","HomePoints"]].rename(columns={"HomeTeam":"Team","HomePoints":"PF"}),
-            matchups[["AwayTeam","AwayPoints"]].rename(columns={"AwayTeam":"Team","AwayPoints":"PF"})
-        ])
-        pa = pd.concat([
-            matchups[["HomeTeam","AwayPoints"]].rename(columns={"HomeTeam":"Team","AwayPoints":"PA"}),
-            matchups[["AwayTeam","HomePoints"]].rename(columns={"AwayTeam":"Team","HomePoints":"PA"})
-        ])
-        pf = pf.groupby("Team", as_index=False).sum()
-        pa = pa.groupby("Team", as_index=False).sum()
-        leaderboard = pf.merge(pa, on="Team", how="outer").fillna(0)
+        # === Season Totals ===
+        st.markdown("### 🧮 Points For / Against / Differential (Season Totals)")
+
+        pf = matchups.groupby("team", as_index=False)["pts"].sum().rename(columns={"pts": "PF"})
+        pa = matchups.groupby("opp", as_index=False)["pts"].sum().rename(columns={"opp": "team", "pts": "PA"})
+        leaderboard = pf.merge(pa, on="team", how="outer").fillna(0)
         leaderboard["Diff"] = leaderboard["PF"] - leaderboard["PA"]
+        leaderboard = leaderboard.sort_values("Diff", ascending=False).reset_index(drop=True)
 
-        st.dataframe(leaderboard)
+        st.dataframe(leaderboard, use_container_width=True)
 
-        fig_pf = px.bar(
-            leaderboard.sort_values("PF", ascending=False),
-            x="Team", y="PF", color="PF",
-            color_continuous_scale="Teal", text_auto=".0f",
-            title="Total Points For"
-        )
-        fig_pf.update_layout(showlegend=False)
-        st.plotly_chart(fig_pf, use_container_width=True)
-
-        fig_pa = px.bar(
-            leaderboard.sort_values("PA", ascending=False),
-            x="Team", y="PA", color="PA",
-            color_continuous_scale="Reds", text_auto=".0f",
-            title="Total Points Against"
-        )
-        fig_pa.update_layout(showlegend=False)
-        st.plotly_chart(fig_pa, use_container_width=True)
-
-        fig_diff = px.bar(
-            leaderboard.sort_values("Diff", ascending=False),
-            x="Team", y="Diff", color="Diff",
-            color_continuous_scale="Bluered_r", text_auto=".0f",
-            title="Point Differential (PF \u2212 PA)"
-        )
-        fig_diff.update_layout(showlegend=False)
-        st.plotly_chart(fig_diff, use_container_width=True)
+        # === Charts ===
+        for metric, color, title in [
+            ("PF", "Teal", "Total Points For"),
+            ("PA", "Reds", "Total Points Against"),
+            ("Diff", "Bluered_r", "Point Differential (PF − PA)"),
+        ]:
+            fig = px.bar(
+                leaderboard.sort_values(metric, ascending=False),
+                x="team",
+                y=metric,
+                color=metric,
+                text_auto=".0f",
+                color_continuous_scale=color,
+                title=title,
+            )
+            fig.update_layout(showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)

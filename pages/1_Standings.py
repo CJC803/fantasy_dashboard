@@ -37,16 +37,19 @@ else:
                 colors.append("green")
             else:            # Outside playoff
                 colors.append("lightgray")
+                
+                fig_chart = go.Figure(
+    go.Bar(
+        x=standings[team_col],
+        y=standings[win_col],
+        text=standings["Rank"],
+        textposition="top center",  # ⬆️ move numbers to top of bars
+        textfont=dict(size=14, color="black"),
+        marker_color=colors,
+    )
+)
 
-        fig_chart = go.Figure(
-            go.Bar(
-                x=standings[team_col],
-                y=standings[win_col],
-                text=standings["Rank"],
-                textposition="outside",
-                marker_color=colors,
-            )
-        )
+    
 
         # Add playoff cutoff marker (between 5th and 6th)
         cutoff_y = standings.loc[5, win_col] - 0.05 if len(standings) > 5 else None

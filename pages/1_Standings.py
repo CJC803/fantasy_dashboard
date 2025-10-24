@@ -93,4 +93,5 @@ fig.update_layout(
         dict(x=4, y=4.2, text="Week 17 – Championship", showarrow=False, font=dict(size=10, color="gray")),
     ],
 )
- 
+st.plotly_chart(fig, use_container_width=True)
+

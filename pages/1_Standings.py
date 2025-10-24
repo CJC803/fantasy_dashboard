@@ -69,10 +69,6 @@ else:
         )
         st.plotly_chart(fig_chart, use_container_width=True)
 
-        # === Standings Table ===
-        st.subheader("📊 Current Standings")
-        st.dataframe(standings[[team_col, win_col, "Rank"]], use_container_width=True)
-
         # === Playoff Bracket ===
         top5 = standings.head(5)
         team_names = top5[team_col].tolist()

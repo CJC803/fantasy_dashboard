@@ -2,11 +2,11 @@ import pandas as pd
 import streamlit as st
 
 # === Replace these with your own CSV export URLs ===
-STANDINGS_URL = "https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=1111"
-ALLPLAY_URL   = "https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=2222"
-INJURIES_URL  = "https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=3333"
-POWER_URL     = "https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=4444"
-MATCHUPS_URL  = "https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=5555"
+STANDINGS_URL = "https://docs.google.com/spreadsheets/d/18JjC_OdQrs1uu4hrUdUTm_4CGhy3kPIm3EOPAC9b18U/export?format=csv&gid=1760588931"
+ALLPLAY_URL   = "https://docs.google.com/spreadsheets/d/18JjC_OdQrs1uu4hrUdUTm_4CGhy3kPIm3EOPAC9b18U/export?format=csv&gid=457551150"
+INJURIES_URL  = "https://docs.google.com/spreadsheets/d/18JjC_OdQrs1uu4hrUdUTm_4CGhy3kPIm3EOPAC9b18U/export?format=csv&gid=818211409"
+POWER_URL     = "https://docs.google.com/spreadsheets/d/18JjC_OdQrs1uu4hrUdUTm_4CGhy3kPIm3EOPAC9b18U/export?format=csv&gid=1068946133"
+MATCHUPS_URL  = "https://docs.google.com/spreadsheets/d/18JjC_OdQrs1uu4hrUdUTm_4CGhy3kPIm3EOPAC9b18U/export?format=csv&gid=1393390675"
 
 @st.cache_data(ttl=300)
 def load_csv(url):

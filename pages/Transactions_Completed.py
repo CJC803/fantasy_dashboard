@@ -31,13 +31,15 @@ else:
         filtered_df = filtered_df[filtered_df["team"].isin(teams)]
     if txn_types:
         filtered_df = filtered_df[filtered_df["type"].isin(txn_types)]
+    # Display transactions (hide internal columns)
+        display_df = filtered_df.drop(columns=["id", "type", "time"], errors="ignore")
 
-    # Display transactions
     st.dataframe(
-        filtered_df.sort_values(by="time", ascending=False).reset_index(drop=True),
+        display_df.sort_values(by="team").reset_index(drop=True),
         use_container_width=True,
         hide_index=True,
-    )
+)
+   
 
     # Download CSV
     st.download_button(

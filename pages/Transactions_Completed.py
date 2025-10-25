@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import altair as alt
 from utils import load_csv, TRANSACTIONS_URL
 
 # ---- Page Config ----
@@ -53,28 +52,16 @@ col1, col2 = st.columns(2)
 col1.metric("Total Transactions", f"{len(filtered_df):,}")
 col2.metric("Unique Teams", filtered_df["team"].nunique())
 
-# ---- Moves Visualization ----
-st.subheader("📊 Total Moves by Team")
+# ---- Display Total Moves ----
+st.subheader("Total Moves by Team")
 if not move_counts.empty:
-    chart = (
-        alt.Chart(move_counts)
-        .mark_bar(size=25, cornerRadiusTopLeft=6, cornerRadiusTopRight=6)
-        .encode(
-            y=alt.Y("Team:N", sort="-x", title="Team"),
-            x=alt.X("Moves:Q", title="Total Moves"),
-            color=alt.Color("Moves:Q", scale=alt.Scale(scheme="blues")),
-            tooltip=[
-                alt.Tooltip("Team:N", title="Team"),
-                alt.Tooltip("Moves:Q", title="Total Moves"),
-            ],
-        )
-        .configure_axis(labelFontSize=12, titleFontSize=14)
-        .configure_view(strokeWidth=0)
-        .properties(height=420)
+    st.dataframe(
+        move_counts.reset_index(drop=True),
+        use_container_width=True,
+        hide_index=True,
     )
-    st.altair_chart(chart, use_container_width=True)
 else:
-    st.info("No transactions available to chart.")
+    st.info("No move data available.")
 
 # ---- Display Transactions ----
 st.subheader("Transactions Table")

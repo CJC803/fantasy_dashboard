@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import altair as alt
 from utils import load_csv, TRANSACTIONS_URL  # shared CSV loader and URL
 
 # ---- Page Config ----
@@ -20,17 +21,35 @@ if df.empty:
     st.info("No completed transactions found.")
 else:
     # ---- Filter out lineup changes and unwanted transaction types ----
-    # Keeps only transactions with "Add:" or "Drop:" in their description
     df = df[df["details"].str.contains("Add:|Drop:", case=False, na=False)]
 
     # ---- Remove unnecessary columns ----
     df = df.drop(columns=["id", "type", "time", "status"], errors="ignore")
+
+    # ---- Compute total moves per team ----
+    move_counts = df["team"].value_counts().reset_index()
+    move_counts.columns = ["Team", "Moves"]
 
     # ---- Summary Metrics ----
     st.subheader("Summary")
     col1, col2 = st.columns(2)
     col1.metric("Total Transactions", f"{len(df):,}")
     col2.metric("Unique Teams", df["team"].nunique())
+
+    # ---- Moves Visualization ----
+    st.subheader("📊 Total Moves by Team")
+    chart = (
+        alt.Chart(move_counts)
+        .mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6)
+        .encode(
+            x=alt.X("Moves:Q", title="Total Moves", sort="descending"),
+            y=alt.Y("Team:N", sort="-x", title="Team"),
+            color=alt.Color("Moves:Q", scale=alt.Scale(scheme="blues")),
+            tooltip=["Team", "Moves"],
+        )
+        .properties(height=400)
+    )
+    st.altair_chart(chart, use_container_width=True)
 
     # ---- Filters ----
     st.subheader("Filters")

@@ -16,6 +16,7 @@ if "data" not in st.session_state:
 
 st.title("🏟️ League Overview")
 st.markdown("""
-This dashboard pulls live fantasy data from your Google Sheet.
-Navigate between Standings, All-Play Standings, Injuries, Power Rankings, and Matchup Summary.
+12 Rookies Enter... Only One Survives to Become a Legend
+Navigate between Standings, All-Play Standings, Injuries, Power Rankings, Matchup Summary, and Transactions.
+Updates Twice a Day.
 """)

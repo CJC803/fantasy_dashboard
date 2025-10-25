@@ -14,9 +14,9 @@ st.sidebar.markdown("Use the sidebar to explore pages.")
 if "data" not in st.session_state:
     st.session_state["data"] = load_all()
 
-st.title("🏟️ League Overview")
+st.title("🏟️ 11 Rookies, 1 Legend")
 st.markdown("""
-12 Rookies Enter... Only One Survives to Become a Legend
+12 Rookies Enter... Only One Survives to Become a Legend.
 Navigate between Standings, All-Play Standings, Injuries, Power Rankings, Matchup Summary, and Transactions.
 Updates Twice a Day.
 """)

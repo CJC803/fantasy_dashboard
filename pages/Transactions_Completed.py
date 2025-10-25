@@ -26,10 +26,6 @@ else:
     # ---- Remove unnecessary columns ----
     df = df.drop(columns=["id", "type", "time", "status"], errors="ignore")
 
-    # ---- Compute total moves per team ----
-    move_counts = df["team"].value_counts().reset_index()
-    move_counts.columns = ["Team", "Moves"]
-
     # ---- Sidebar Filters ----
     st.sidebar.header("⚙️ Filters")
     teams = st.sidebar.multiselect("Filter by Team", sorted(df["team"].unique()))
@@ -37,6 +33,13 @@ else:
     filtered_df = df.copy()
     if teams:
         filtered_df = filtered_df[filtered_df["team"].isin(teams)]
+
+    # ---- Compute total moves per team ----
+    move_counts = (
+        filtered_df["team"].value_counts()
+        .reset_index()
+        .rename(columns={"index": "Team", "team": "Moves"})
+    )
 
     # ---- Summary Metrics ----
     st.subheader("Summary")
@@ -46,18 +49,21 @@ else:
 
     # ---- Moves Visualization ----
     st.subheader("📊 Total Moves by Team")
-    chart = (
-        alt.Chart(filtered_df["team"].value_counts().reset_index())
-        .mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6)
-        .encode(
-            x=alt.X("team:Q", title="Total Moves"),
-            y=alt.Y("index:N", title="Team", sort="-x"),
-            color=alt.Color("team:Q", scale=alt.Scale(scheme="blues")),
-            tooltip=["index", "team"],
+    if not move_counts.empty:
+        chart = (
+            alt.Chart(move_counts)
+            .mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6)
+            .encode(
+                x=alt.X("Moves:Q", title="Total Moves"),
+                y=alt.Y("Team:N", title="Team", sort="-x"),
+                color=alt.Color("Moves:Q", scale=alt.Scale(scheme="blues")),
+                tooltip=["Team", "Moves"],
+            )
+            .properties(height=400)
         )
-        .properties(height=400)
-    )
-    st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, use_container_width=True)
+    else:
+        st.info("No transactions match the selected filters.")
 
     # ---- Display Transactions ----
     st.subheader("Transactions Table")

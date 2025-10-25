@@ -26,19 +26,23 @@ else:
     # ---- Remove unnecessary columns ----
     df = df.drop(columns=["id", "type", "time", "status"], errors="ignore")
 
-    # ---- Sidebar Filters ----
-    st.sidebar.header("⚙️ Filters")
-    teams = st.sidebar.multiselect("Filter by Team", sorted(df["team"].unique()))
+    # ---- Sidebar Filter ----
+    st.sidebar.header("⚙️ Filter")
+    teams = sorted(df["team"].unique())
+    selected_team = st.sidebar.selectbox("Select Team", ["All Teams"] + teams)
 
-    filtered_df = df.copy()
-    if teams:
-        filtered_df = filtered_df[filtered_df["team"].isin(teams)]
+    if selected_team != "All Teams":
+        filtered_df = df[df["team"] == selected_team]
+    else:
+        filtered_df = df.copy()
 
     # ---- Compute total moves per team ----
     move_counts = (
-        filtered_df["team"].value_counts()
+        filtered_df["team"]
+        .value_counts()
         .reset_index()
         .rename(columns={"index": "Team", "team": "Moves"})
+        .sort_values(by="Moves", ascending=False)
     )
 
     # ---- Summary Metrics ----
@@ -52,18 +56,20 @@ else:
     if not move_counts.empty:
         chart = (
             alt.Chart(move_counts)
-            .mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6)
+            .mark_bar(size=25, cornerRadiusTopLeft=5, cornerRadiusTopRight=5)
             .encode(
-                x=alt.X("Moves:Q", title="Total Moves"),
                 y=alt.Y("Team:N", title="Team", sort="-x"),
+                x=alt.X("Moves:Q", title="Total Moves"),
                 color=alt.Color("Moves:Q", scale=alt.Scale(scheme="blues")),
-                tooltip=[alt.Tooltip("Team:N"), alt.Tooltip("Moves:Q")],
+                tooltip=["Team", "Moves"],
             )
+            .configure_axis(labelFontSize=12, titleFontSize=14)
+            .configure_view(strokeWidth=0)
             .properties(height=400)
         )
         st.altair_chart(chart, use_container_width=True)
     else:
-        st.info("No transactions match the selected filters.")
+        st.info("No transactions match the selected team.")
 
     # ---- Display Transactions ----
     st.subheader("Transactions Table")

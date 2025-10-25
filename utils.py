@@ -7,7 +7,7 @@ ALLPLAY_URL   = "https://docs.google.com/spreadsheets/d/18JjC_OdQrs1uu4hrUdUTm_4
 INJURIES_URL  = "https://docs.google.com/spreadsheets/d/18JjC_OdQrs1uu4hrUdUTm_4CGhy3kPIm3EOPAC9b18U/export?format=csv&gid=818211409"
 POWER_URL     = "https://docs.google.com/spreadsheets/d/18JjC_OdQrs1uu4hrUdUTm_4CGhy3kPIm3EOPAC9b18U/export?format=csv&gid=1068946133"
 MATCHUPS_URL  = "https://docs.google.com/spreadsheets/d/18JjC_OdQrs1uu4hrUdUTm_4CGhy3kPIm3EOPAC9b18U/export?format=csv&gid=1393390675"
-
+TRANSACTIONS_URL = "https://docs.google.com/spreadsheets/d/18JjC_OdQrs1uu4hrUdUTm_4CGhy3kPIm3EOPAC9b18U/export?format=csv&gid=622740068"
 @st.cache_data(ttl=300)
 def load_csv(url):
     try:

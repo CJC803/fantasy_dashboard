@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
-from utils import load_csv, TRANSACTIONS_URL  # shared CSV loader and URL
+from utils import load_csv, TRANSACTIONS_URL
 
 # ---- Page Config ----
 st.set_page_config(page_title="Completed Transactions", layout="wide")
@@ -38,8 +38,7 @@ else:
 
     # ---- Compute total moves per team ----
     move_counts = (
-        filtered_df["team"]
-        .value_counts()
+        df["team"].value_counts()
         .reset_index()
         .rename(columns={"index": "Team", "team": "Moves"})
         .sort_values(by="Moves", ascending=False)
@@ -54,19 +53,27 @@ else:
     # ---- Moves Visualization ----
     st.subheader("📊 Total Moves by Team")
     if not move_counts.empty:
+        # Ensure proper data types for Altair
+        move_counts["Team"] = move_counts["Team"].astype(str)
+        move_counts["Moves"] = pd.to_numeric(move_counts["Moves"], errors="coerce")
+
         chart = (
             alt.Chart(move_counts)
-            .mark_bar(size=25, cornerRadiusTopLeft=5, cornerRadiusTopRight=5)
+            .mark_bar(size=22, cornerRadiusTopLeft=5, cornerRadiusTopRight=5)
             .encode(
-                y=alt.Y("Team:N", title="Team", sort="-x"),
+                y=alt.Y("Team:N", sort="-x", title="Team"),
                 x=alt.X("Moves:Q", title="Total Moves"),
                 color=alt.Color("Moves:Q", scale=alt.Scale(scheme="blues")),
-                tooltip=["Team", "Moves"],
+                tooltip=[
+                    alt.Tooltip("Team:N", title="Team"),
+                    alt.Tooltip("Moves:Q", title="Total Moves"),
+                ],
             )
             .configure_axis(labelFontSize=12, titleFontSize=14)
             .configure_view(strokeWidth=0)
-            .properties(height=400)
+            .properties(height=420)
         )
+
         st.altair_chart(chart, use_container_width=True)
     else:
         st.info("No transactions match the selected team.")

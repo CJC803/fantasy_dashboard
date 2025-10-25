@@ -38,11 +38,12 @@ else:
 
     # ---- Compute total moves per team ----
     move_counts = (
-        df["team"].value_counts()
+        df["team"]
+        .value_counts()
         .reset_index()
-        .rename(columns={"index": "Team", "team": "Moves"})
-        .sort_values(by="Moves", ascending=False)
-    )
+        .rename(columns={"index": "Team", "team": "Moves"})  # Explicit column naming
+        .astype({"Team": "string", "Moves": "int"})
+    ).sort_values(by="Moves", ascending=False)
 
     # ---- Summary Metrics ----
     st.subheader("Summary")
@@ -53,13 +54,9 @@ else:
     # ---- Moves Visualization ----
     st.subheader("📊 Total Moves by Team")
     if not move_counts.empty:
-        # Ensure proper data types for Altair
-        move_counts["Team"] = move_counts["Team"].astype(str)
-        move_counts["Moves"] = pd.to_numeric(move_counts["Moves"], errors="coerce")
-
         chart = (
             alt.Chart(move_counts)
-            .mark_bar(size=22, cornerRadiusTopLeft=5, cornerRadiusTopRight=5)
+            .mark_bar(size=25, cornerRadiusTopLeft=6, cornerRadiusTopRight=6)
             .encode(
                 y=alt.Y("Team:N", sort="-x", title="Team"),
                 x=alt.X("Moves:Q", title="Total Moves"),
@@ -73,7 +70,6 @@ else:
             .configure_view(strokeWidth=0)
             .properties(height=420)
         )
-
         st.altair_chart(chart, use_container_width=True)
     else:
         st.info("No transactions match the selected team.")

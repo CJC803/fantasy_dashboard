@@ -22,22 +22,24 @@ else:
     col2.metric("Unique teams", df["team"].nunique())
 
     # Filters
-    st.subheader("Filters")
-    teams = st.multiselect("Filter by team", sorted(df["team"].unique()))
-    txn_types = st.multiselect("Filter by type", sorted(df["type"].unique()))
+st.subheader("Filters")
+teams = st.multiselect("Filter by team", sorted(df["team"].unique()))
+txn_types = st.multiselect("Filter by type", sorted(df["type"].unique()))
 
-    filtered_df = df.copy()
-    if teams:
-        filtered_df = filtered_df[filtered_df["team"].isin(teams)]
-    if txn_types:
-        filtered_df = filtered_df[filtered_df["type"].isin(txn_types)]
-    # Display transactions (hide internal columns)
-        display_df = filtered_df.drop(columns=["id", "type", "time"], errors="ignore")
+filtered_df = df.copy()
+if teams:
+    filtered_df = filtered_df[filtered_df["team"].isin(teams)]
+if txn_types:
+    filtered_df = filtered_df[filtered_df["type"].isin(txn_types)]
 
-    st.dataframe(
-        display_df.sort_values(by="team").reset_index(drop=True),
-        use_container_width=True,
-        hide_index=True,
+# ✅ Always define display_df outside of the if-blocks
+display_df = filtered_df.drop(columns=["id", "type", "time"], errors="ignore")
+
+# Display transactions (hide internal columns)
+st.dataframe(
+    display_df.sort_values(by="team").reset_index(drop=True),
+    use_container_width=True,
+    hide_index=True,
 )
    
 

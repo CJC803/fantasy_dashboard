@@ -19,6 +19,13 @@ with st.spinner("Loading transactions..."):
 if df.empty:
     st.info("No completed transactions found.")
 else:
+    # ---- Filter out lineup changes and unwanted transaction types ----
+    # Keeps only transactions with "Add:" or "Drop:" in their description
+    df = df[df["details"].str.contains("Add:|Drop:", case=False, na=False)]
+
+    # ---- Remove unnecessary columns ----
+    df = df.drop(columns=["id", "type", "time", "status"], errors="ignore")
+
     # ---- Summary Metrics ----
     st.subheader("Summary")
     col1, col2 = st.columns(2)
@@ -28,21 +35,15 @@ else:
     # ---- Filters ----
     st.subheader("Filters")
     teams = st.multiselect("Filter by team", sorted(df["team"].unique()))
-    txn_types = st.multiselect("Filter by type", sorted(df["type"].unique()))
 
     filtered_df = df.copy()
     if teams:
         filtered_df = filtered_df[filtered_df["team"].isin(teams)]
-    if txn_types:
-        filtered_df = filtered_df[filtered_df["type"].isin(txn_types)]
-
-    # ---- Hide internal columns (id, type, time) ----
-    display_df = filtered_df.drop(columns=["id", "type", "time"], errors="ignore")
 
     # ---- Display Transactions ----
     st.subheader("Transactions Table")
     st.dataframe(
-        display_df.sort_values(by="team").reset_index(drop=True),
+        filtered_df.sort_values(by="team").reset_index(drop=True),
         use_container_width=True,
         hide_index=True,
     )

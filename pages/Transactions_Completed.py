@@ -37,13 +37,17 @@ else:
         filtered_df = df.copy()
 
     # ---- Compute total moves per team ----
+if "team" in df.columns and not df.empty:
     move_counts = (
         df["team"]
         .value_counts()
         .reset_index()
-        .rename(columns={"index": "Team", "team": "Moves"})  # Explicit column naming
+        .rename(columns={"index": "Team", "team": "Moves"})
         .astype({"Team": "string", "Moves": "int"})
-    ).sort_values(by="Moves", ascending=False)
+        .sort_values(by="Moves", ascending=False)
+    )
+else:
+    move_counts = pd.DataFrame(columns=["Team", "Moves"])
 
     # ---- Summary Metrics ----
     st.subheader("Summary")

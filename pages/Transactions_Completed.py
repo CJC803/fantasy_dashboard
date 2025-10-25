@@ -52,16 +52,6 @@ col1, col2 = st.columns(2)
 col1.metric("Total Transactions", f"{len(filtered_df):,}")
 col2.metric("Unique Teams", filtered_df["team"].nunique())
 
-# ---- Display Total Moves ----
-st.subheader("Total Moves by Team")
-if not move_counts.empty:
-    st.dataframe(
-        move_counts.reset_index(drop=True),
-        use_container_width=True,
-        hide_index=True,
-    )
-else:
-    st.info("No move data available.")
 
 # ---- Display Transactions ----
 st.subheader("Transactions Table")

@@ -57,7 +57,7 @@ else:
                 x=alt.X("Moves:Q", title="Total Moves"),
                 y=alt.Y("Team:N", title="Team", sort="-x"),
                 color=alt.Color("Moves:Q", scale=alt.Scale(scheme="blues")),
-                tooltip=["Team", "Moves"],
+                tooltip=[alt.Tooltip("Team:N"), alt.Tooltip("Moves:Q")],
             )
             .properties(height=400)
         )

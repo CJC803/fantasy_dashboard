@@ -10,13 +10,15 @@ injuries = data.get("injuries", pd.DataFrame())
 if injuries.empty:
     st.info("No injury data available.")
 else:
+    # === Normalize column names ===
     injuries.columns = injuries.columns.str.strip().str.lower()
 
+    # === Identify key columns ===
     status_col = next((c for c in injuries.columns if "status" in c or "injury" in c), None)
     team_col = next((c for c in injuries.columns if "team" in c or "proteam" in c), None)
     pos_col = next((c for c in injuries.columns if "pos" in c), None)
 
-    # Filter out healthy players
+    # === Filter out healthy players ===
     if status_col:
         injuries = injuries[~injuries[status_col].str.contains("active|healthy|none", case=False, na=False)]
 
@@ -53,47 +55,20 @@ else:
             st.dataframe(injuries, use_container_width=True)
 
         # === Charts ===
-        if team_col and pos_col:
+        if team_col:
             col1, col2 = st.columns(2)
 
-            # --- Team Bar Chart ---
+            # --- Radar Chart: Injuries by Team ---
             with col1:
                 team_counts = injuries[team_col].value_counts().reset_index()
                 team_counts.columns = ["Team", "Injured Players"]
 
-                fig_team = px.bar(
-                    team_counts,
-                    x="Injured Players",
-                    y="Team",
-                    orientation="h",
-                    text="Injured Players",
-                    color="Injured Players",
-                    color_continuous_scale=px.colors.sequential.Blues_r,
-                    title="Team Injury Count",
-                )
-                fig_team.update_layout(
-                    yaxis_title=None,
-                    xaxis_title=None,
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="#f0f0f0"),
-                    coloraxis_showscale=False,
-                    margin=dict(t=60, b=20),
-                )
-                fig_team.update_traces(textposition="outside")
-                st.plotly_chart(fig_team, use_container_width=True)
-
-            # --- Position Radar Chart ---
-            with col2:
-                pos_counts = injuries[pos_col].value_counts().reset_index()
-                pos_counts.columns = ["Position", "Injured Players"]
-
                 fig_radar = px.line_polar(
-                    pos_counts,
+                    team_counts,
                     r="Injured Players",
-                    theta="Position",
+                    theta="Team",
                     line_close=True,
-                    title="🕸️ Injuries by Position",
+                    title="🕸️ Injured Players by Team",
                     color_discrete_sequence=["#ff9f43"],  # gold accent
                 )
                 fig_radar.update_traces(
@@ -109,5 +84,33 @@ else:
                     plot_bgcolor="rgba(0,0,0,0)",
                     paper_bgcolor="rgba(0,0,0,0)",
                     font=dict(color="#f0f0f0"),
+                    margin=dict(t=60, b=20),
                 )
                 st.plotly_chart(fig_radar, use_container_width=True)
+
+            # --- Bar Chart: Injuries by Position ---
+            if pos_col:
+                with col2:
+                    pos_counts = injuries[pos_col].value_counts().reset_index()
+                    pos_counts.columns = ["Position", "Injured Players"]
+
+                    fig_pos = px.bar(
+                        pos_counts,
+                        x="Position",
+                        y="Injured Players",
+                        color="Injured Players",
+                        text="Injured Players",
+                        color_continuous_scale=px.colors.sequential.Blues_r,
+                        title="Injuries by Position",
+                    )
+                    fig_pos.update_traces(textposition="outside")
+                    fig_pos.update_layout(
+                        xaxis_title=None,
+                        yaxis_title=None,
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#f0f0f0"),
+                        coloraxis_showscale=False,
+                        margin=dict(t=60, b=20),
+                    )
+                    st.plotly_chart(fig_pos, use_container_width=True)

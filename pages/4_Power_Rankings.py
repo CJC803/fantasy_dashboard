@@ -148,23 +148,43 @@ fig.update_traces(textposition="outside", cliponaxis=False)
 st.plotly_chart(fig, use_container_width=True)
 
 # =======================
-#   FULL RANKINGS TABLE
+#  FULL RANKINGS CHART
 # =======================
-st.subheader("📋 Full Power Rankings — Table")
+st.subheader("🏆 Full Power Rankings — Chart")
 
-display = power.copy()
-display["All-Play %"] = display["All-Play %"].map(lambda x: f"{x:.1f}%" if pd.notna(x) else "")
-display["Recent Form (3 wk avg)"] = display["Recent Form (3 wk avg)"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
-display["PF"] = display["PF"].map(lambda x: f"{x:.0f}" if pd.notna(x) else "")
-display["Avg Margin"] = display["Avg Margin"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
-display["SoS (opp PF avg)"] = display["SoS (opp PF avg)"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
-display["Power Index"] = display["Power Index"].map(lambda x: f"{x:.2f}" if pd.notna(x) else "")
+# Sort descending so strongest teams (highest Power Index) are at the top
+chart_df = power.sort_values("Power Index", ascending=False).copy()
 
-display = display[
-    ["Rank", "Team", "Power Index", "All-Play %", "PF", "Avg Margin", "Recent Form (3 wk avg)", "SoS (opp PF avg)"]
-]
+fig = px.bar(
+    chart_df,
+    x="Power Index",
+    y="Team",
+    orientation="h",
+    text=chart_df["Rank"].astype(int).astype(str),
+    hover_data={
+        "Team": True,
+        "Power Index": ":.2f",
+        "All-Play %": ":.1f",
+        "PF": ":.0f",
+        "Avg Margin": ":.1f",
+        "Recent Form (3 wk avg)": ":.1f",
+        "SoS (opp PF avg)": ":.1f",
+    },
+    color="Power Index",
+    color_continuous_scale="Blues_r",  # 🔵 Reversed to match other dashboards
+)
 
-st.dataframe(display, use_container_width=True, hide_index=True)
+fig.update_layout(
+    xaxis_title="Power Index",
+    yaxis_title="Team",
+    plot_bgcolor="rgba(0,0,0,0)",
+    paper_bgcolor="rgba(0,0,0,0)",
+    font=dict(color="#f0f0f0"),
+    showlegend=False,
+    margin=dict(l=10, r=10, t=30, b=10),
+)
+fig.update_traces(textposition="outside", cliponaxis=False)
+st.plotly_chart(fig, use_container_width=True)
 
 # ---- Download ----
 st.download_button(

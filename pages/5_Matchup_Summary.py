@@ -23,9 +23,15 @@ else:
         # Convert types
         matchups["week"] = pd.to_numeric(matchups["week"], errors="coerce")
         matchups["pts"] = pd.to_numeric(matchups["pts"], errors="coerce")
+        # Get most recent completed week (pts column not blank)
+        latest_week = (
+            matchups.loc[matchups["pts"].notna(), "week"]
+            .max()
+        )
 
-        # Week selector
-        week = week_selector(matchups, week_col="week")
+        # Week selector with default = latest with data
+        week = week_selector(matchups, week_col="week", default_week=latest_week)
+
 
         if week is not None:
             st.subheader(f"Results – Week {week}")

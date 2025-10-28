@@ -25,23 +25,43 @@ def load_all():
         "matchups":  load_csv(MATCHUPS_URL),
     }
 
-def week_selector(df, week_col="week", default_week=None):
+def week_selector(df, week_col="week", pts_col="pts", default_week=None):
     """
-    Creates a Streamlit week selector with optional default value.
-    If default_week isn't found, defaults to the last available week.
+    Streamlit week selector that:
+    - Excludes future weeks (where all pts are blank)
+    - Defaults to the most recent week that has any points
     """
-    weeks = sorted(df[week_col].dropna().unique())
+    # Convert columns safely
+    df[week_col] = pd.to_numeric(df[week_col], errors="coerce")
 
-    # Pick default index
-    if default_week in weeks:
-        default_index = weeks.index(default_week)
+    # Identify valid (completed) weeks where there’s at least one score
+    if pts_col in df.columns:
+        df[pts_col] = pd.to_numeric(df[pts_col], errors="coerce")
+        completed_weeks = (
+            df.groupby(week_col)[pts_col]
+            .apply(lambda s: s.notna().any())
+            .loc[lambda x: x].index.tolist()
+        )
     else:
-        default_index = len(weeks) - 1  # last week if default missing
+        completed_weeks = sorted(df[week_col].dropna().unique())
+
+    # Sort ascending for dropdown
+    completed_weeks = sorted(set(completed_weeks))
+
+    # Determine default week — use provided or latest completed
+    if default_week in completed_weeks:
+        default_index = completed_weeks.index(default_week)
+    elif completed_weeks:
+        default_index = len(completed_weeks) - 1  # last completed
+        default_week = completed_weeks[-1]
+    else:
+        default_index = 0
+        default_week = None
 
     return st.selectbox(
         "Select Week",
-        options=weeks,
-        index=default_index if weeks else 0,
-        key="week_selector"
+        options=completed_weeks,
+        index=default_index if completed_weeks else 0,
+        key="week_selector",
     )
 

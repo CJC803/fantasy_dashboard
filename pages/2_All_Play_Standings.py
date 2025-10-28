@@ -51,13 +51,15 @@ else:
             trend_available = False
 
         # === Step 3: KPI metrics ===
-        avg_win = merged["Win%"].mean()
         top_team = merged.iloc[0]["Team"]
         top_win = merged.iloc[0]["Win%"]
-
+        
+        bottom_team = merged.iloc[-1]["Team"]
+        bottom_win = merged.iloc[-1]["Win%"]
+        
         c1, c2, c3 = st.columns(3)
         c1.metric("Teams Tracked", len(merged))
-        c2.metric("League Avg Win%", f"{avg_win:.3f}")
+        c2.metric("Lowest All-Play Team", f"{bottom_team} ({bottom_win:.3f})")
         c3.metric("Top Team", f"{top_team} ({top_win:.3f})")
 
         if trend_available:

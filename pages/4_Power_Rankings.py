@@ -84,7 +84,7 @@ top_team = power.loc[power["Rank"].idxmin(), "Team"]
 col1.metric("Top Team", top_team)
 
 col2.metric("Avg Power Index", f"{power['Power Index'].mean():.2f}")
-col3.metric("Avg PF", f"{power['PF'].mean():.1f}")
+col3.metric("Total PF", f"{power['PF'].mean():.1f}")
 
 # Best recent form (3-week avg PF)
 best_form_idx = power["Recent Form (3 wk avg)"].idxmax()

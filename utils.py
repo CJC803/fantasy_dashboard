@@ -24,44 +24,43 @@ def load_all():
         "power":     load_csv(POWER_URL),
         "matchups":  load_csv(MATCHUPS_URL),
     }
-
 def week_selector(df, week_col="week", pts_col="pts", default_week=None):
     """
     Streamlit week selector that:
     - Excludes future weeks (where all pts are blank)
-    - Defaults to the most recent week that has any points
+    - Defaults to the most recent week that has any valid points
     """
     # Convert columns safely
     df[week_col] = pd.to_numeric(df[week_col], errors="coerce")
 
-    # Identify valid (completed) weeks where there’s at least one score
+    # Identify completed weeks — where at least one points value exists
     if pts_col in df.columns:
         df[pts_col] = pd.to_numeric(df[pts_col], errors="coerce")
-        completed_weeks = (
+        week_points = (
             df.groupby(week_col)[pts_col]
-            .apply(lambda s: s.notna().any())
-            .loc[lambda x: x].index.tolist()
+            .apply(lambda s: s.notna().any() and s.sum() > 0)
         )
+        completed_weeks = week_points[week_points].index.tolist()
     else:
         completed_weeks = sorted(df[week_col].dropna().unique())
 
-    # Sort ascending for dropdown
     completed_weeks = sorted(set(completed_weeks))
 
-    # Determine default week — use provided or latest completed
-    if default_week in completed_weeks:
-        default_index = completed_weeks.index(default_week)
-    elif completed_weeks:
-        default_index = len(completed_weeks) - 1  # last completed
+    # --- Default logic ---
+    # Always default to last completed week (with actual data)
+    if completed_weeks:
         default_week = completed_weeks[-1]
+        default_index = len(completed_weeks) - 1
     else:
-        default_index = 0
         default_week = None
+        default_index = 0
 
+    # --- Streamlit UI ---
     return st.selectbox(
         "Select Week",
         options=completed_weeks,
         index=default_index if completed_weeks else 0,
         key="week_selector",
     )
+
 

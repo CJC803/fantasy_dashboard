@@ -67,36 +67,36 @@ else:
             col1, col2 = st.columns(2)
 
             # --- Radar Chart: Injuries by Team ---
-with col1:
-    # use same palette as bar
-    blues_palette = px.colors.sequential.Blues_r
-    main_color = blues_palette[2]  # pick a mid-dark tone from palette
+            with col1:
+                # use same palette as bar
+                blues_palette = px.colors.sequential.Blues_r
+                main_color = blues_palette[2]  # pick a mid-dark tone from palette
 
-    fig_radar = px.line_polar(
-        team_counts,
-        r="Injured Players",
-        theta="Team",
-        line_close=True,
-        title="🕸️ Injured Players by Team (Radar)",
-        color_discrete_sequence=[main_color],
-    )
-    fig_radar.update_traces(
-        fill="toself",
-        line_color=main_color,
-        fillcolor=f"rgba({int(int(main_color[1:3],16))}, {int(int(main_color[3:5],16))}, {int(int(main_color[5:7],16))}, 0.5)",
-        hovertemplate="<b>%{theta}</b><br>Injured: %{r}<extra></extra>",
-    )
-    fig_radar.update_layout(
-        polar=dict(
-            radialaxis=dict(visible=True, showticklabels=True, color="gray"),
-            angularaxis=dict(tickfont=dict(size=12))
-        ),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#f0f0f0"),
-        margin=dict(t=60, b=20),
-    )
-    st.plotly_chart(fig_radar, use_container_width=True)
+                fig_radar = px.line_polar(
+                    team_counts,
+                    r="Injured Players",
+                    theta="Team",
+                    line_close=True,
+                    title="🕸️ Injured Players by Team (Radar)",
+                    color_discrete_sequence=[main_color],
+                )
+                fig_radar.update_traces(
+                    fill="toself",
+                    line_color=main_color,
+                    fillcolor=f"rgba({int(int(main_color[1:3],16))}, {int(int(main_color[3:5],16))}, {int(int(main_color[5:7],16))}, 0.5)",
+                    hovertemplate="<b>%{theta}</b><br>Injured: %{r}<extra></extra>",
+                )
+                fig_radar.update_layout(
+                    polar=dict(
+                        radialaxis=dict(visible=True, showticklabels=True, color="gray"),
+                        angularaxis=dict(tickfont=dict(size=12))
+                    ),
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#f0f0f0"),
+                    margin=dict(t=60, b=20),
+                )    
+                st.plotly_chart(fig_radar, use_container_width=True)
 
             # --- Bar Chart: Injuries by Team ---
             with col2:

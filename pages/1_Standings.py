@@ -28,21 +28,24 @@ else:
         standings = standings.sort_values(win_col, ascending=False).reset_index(drop=True)
         standings["Rank"] = range(1, len(standings) + 1)
 
-        # === Vertical Bar Chart of Current Standings ===
+        # === Vertical Bar Chart ===
         colors = []
         for r in standings["Rank"]:
-            if r in [4, 5]:  # Play-in teams
-                colors.append("orange")
-            elif r <= 3:      # Playoff locks
-                colors.append("green")
-            else:             # Outside playoff
-                colors.append("lightgray")
+            if r <= 3:
+                colors.append("#1f77b4")   # Deep blue for playoff locks
+            elif r in [4, 5]:
+                colors.append("#66b3ff")   # Lighter blue for play-in
+            else:
+                colors.append("#2c2c2c")   # Dark gray for eliminated
 
         fig_chart = go.Figure(
             go.Bar(
                 x=standings[team_col],
                 y=standings[win_col],
-                marker_color=colors
+                marker_color=colors,
+                text=standings[win_col],
+                textposition="outside",
+                textfont=dict(color="#f0f0f0"),
             )
         )
 
@@ -52,10 +55,10 @@ else:
             fig_chart.add_hline(
                 y=cutoff_y,
                 line_dash="dash",
-                line_color="red",
+                line_color="#ff9f43",  # gold accent
                 annotation_text="Playoff Cutoff",
                 annotation_position="top right",
-                annotation_font_color="red",
+                annotation_font_color="#ff9f43",
             )
 
         fig_chart.update_layout(
@@ -63,6 +66,9 @@ else:
             xaxis_title="Team",
             yaxis_title=win_col,
             height=450,
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#f0f0f0"),
             margin=dict(t=40, b=40, l=40, r=20),
         )
         st.plotly_chart(fig_chart, use_container_width=True)
@@ -99,7 +105,7 @@ else:
                         y=[y],
                         mode="text",
                         text=[labels[key]],
-                        textfont=dict(size=16),
+                        textfont=dict(size=16, color="#f0f0f0"),
                         hoverinfo="none",
                     )
                 )
@@ -110,6 +116,9 @@ else:
                 yaxis=dict(visible=False),
                 showlegend=False,
                 height=400,
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#f0f0f0"),
                 margin=dict(t=40, b=20, l=20, r=20),
                 annotations=[
                     dict(x=0, y=4.2, text="Week 15 – Play-In", showarrow=False, font=dict(size=10, color="gray")),

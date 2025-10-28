@@ -39,14 +39,22 @@ if missing:
 # ---- Helpers ----
 def clean_percent_column(series: pd.Series) -> pd.Series:
     """
-    Convert messy percent strings like '65%', '65.0 %', ' 65 % ', or decimals '0.65'
-    into floats in the 0–100 range.
+    Handles strings like '65%', '65.0 %', '65 %', ' 65 %', '0.65', etc.
+    Converts to float 65.0 for numeric math.
     """
-    s = series.astype(str).apply(lambda x: re.sub(r"[%\s\u202F\u00A0,]", "", x))
-    s = pd.to_numeric(s, errors="coerce")
-    if s.dropna().max() <= 1:
-        s = s * 100
-    return s
+    def normalize(x):
+        if pd.isna(x):
+            return None
+        # Force string and remove everything except digits, dot, or minus sign
+        x = str(x)
+        x = re.sub(r"[^0-9.\-]", "", x)  # strips %, commas, and hidden unicode spaces
+        try:
+            val = float(x)
+            return val * 100 if 0 <= val <= 1 else val
+        except ValueError:
+            return None
+
+    return pd.Series([normalize(v) for v in series], dtype="float")
 
 # ---- Numeric cleanup ----
 power["All-Play %"] = clean_percent_column(power["All-Play %"])

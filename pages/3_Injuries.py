@@ -16,7 +16,6 @@ else:
     # === Identify key columns ===
     status_col = next((c for c in injuries.columns if "status" in c or "injury" in c), None)
     team_col = next((c for c in injuries.columns if "team" in c or "proteam" in c), None)
-    pos_col = next((c for c in injuries.columns if "pos" in c), None)
 
     # === Filter out healthy players ===
     if status_col:
@@ -34,41 +33,34 @@ else:
             if selected_team != "All Teams":
                 injuries = injuries[injuries[team_col] == selected_team]
 
-        if pos_col:
-            positions = sorted(injuries[pos_col].dropna().unique())
-            selected_positions = st.sidebar.multiselect("Filter by Position", positions, default=positions)
-            injuries = injuries[injuries[pos_col].isin(selected_positions)]
-
         # === KPI Metrics ===
         total_injured = len(injuries)
         total_teams = injuries[team_col].nunique() if team_col else 0
-        total_positions = injuries[pos_col].nunique() if pos_col else 0
 
-        c1, c2, c3 = st.columns(3)
+        c1, c2 = st.columns(2)
         c1.metric("Total Injured", total_injured)
         c2.metric("Teams Impacted", total_teams)
-        c3.metric("Positions Affected", total_positions)
         st.caption(f"🕒 Updated: {pd.Timestamp.now():%b %d, %Y %I:%M %p}")
 
         # === Injury Table (Expandable) ===
         with st.expander("🩹 View Injury List"):
             st.dataframe(injuries, use_container_width=True)
 
-        # === Charts ===
+        # === Charts: Both by Team ===
         if team_col:
+            team_counts = injuries[team_col].value_counts().reset_index()
+            team_counts.columns = ["Team", "Injured Players"]
+
             col1, col2 = st.columns(2)
 
             # --- Radar Chart: Injuries by Team ---
             with col1:
-                team_counts = injuries[team_col].value_counts().reset_index()
-                team_counts.columns = ["Team", "Injured Players"]
-
                 fig_radar = px.line_polar(
                     team_counts,
                     r="Injured Players",
                     theta="Team",
                     line_close=True,
-                    title="🕸️ Injured Players by Team",
+                    title="🕸️ Injured Players by Team (Radar)",
                     color_discrete_sequence=["#ff9f43"],  # gold accent
                 )
                 fig_radar.update_traces(
@@ -88,29 +80,25 @@ else:
                 )
                 st.plotly_chart(fig_radar, use_container_width=True)
 
-            # --- Bar Chart: Injuries by Position ---
-            if pos_col:
-                with col2:
-                    pos_counts = injuries[pos_col].value_counts().reset_index()
-                    pos_counts.columns = ["Position", "Injured Players"]
-
-                    fig_pos = px.bar(
-                        pos_counts,
-                        x="Position",
-                        y="Injured Players",
-                        color="Injured Players",
-                        text="Injured Players",
-                        color_continuous_scale=px.colors.sequential.Blues_r,
-                        title="Injuries by Position",
-                    )
-                    fig_pos.update_traces(textposition="outside")
-                    fig_pos.update_layout(
-                        xaxis_title=None,
-                        yaxis_title=None,
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        font=dict(color="#f0f0f0"),
-                        coloraxis_showscale=False,
-                        margin=dict(t=60, b=20),
-                    )
-                    st.plotly_chart(fig_pos, use_container_width=True)
+            # --- Bar Chart: Injuries by Team ---
+            with col2:
+                fig_bar = px.bar(
+                    team_counts,
+                    x="Team",
+                    y="Injured Players",
+                    color="Injured Players",
+                    text="Injured Players",
+                    color_continuous_scale=px.colors.sequential.Blues_r,
+                    title="Injured Players by Team (Bar)",
+                )
+                fig_bar.update_traces(textposition="outside")
+                fig_bar.update_layout(
+                    xaxis_title=None,
+                    yaxis_title=None,
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#f0f0f0"),
+                    coloraxis_showscale=False,
+                    margin=dict(t=60, b=20),
+                )
+                st.plotly_chart(fig_bar, use_container_width=True)

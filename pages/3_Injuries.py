@@ -51,6 +51,19 @@ else:
             team_counts = injuries[team_col].value_counts().reset_index()
             team_counts.columns = ["Team", "Injured Players"]
 
+            # --- Top Injured Team Callout ---
+            top_team, top_count = team_counts.iloc[0]
+            st.markdown(
+                f"""
+                <div style='background-color:#111111;padding:12px;border-radius:10px;margin-top:1rem;margin-bottom:1.2rem'>
+                    <h3 style='color:#ff9f43;margin:0;font-weight:600'>
+                        🏥 Top Injured Team: {top_team} ({top_count} players)
+                    </h3>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
             col1, col2 = st.columns(2)
 
             # --- Radar Chart: Injuries by Team ---

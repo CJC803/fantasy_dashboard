@@ -30,13 +30,25 @@ matchups["pts"] = pd.to_numeric(matchups["pts"], errors="coerce")
 
 # ---- Sidebar Week Selector ----
 st.sidebar.header("⚙️ Filters")
-latest_week = matchups.loc[matchups["pts"].notna(), "week"].max()
+
+# Convert safely
+matchups["week"] = pd.to_numeric(matchups["week"], errors="coerce")
+matchups["pts"] = pd.to_numeric(matchups["pts"], errors="coerce")
+
+# Only count completed weeks (any pts > 0)
+completed_weeks = (
+    matchups.groupby("week")["pts"]
+    .apply(lambda s: (s > 0).any())
+)
+valid_weeks = sorted(completed_weeks[completed_weeks].index.tolist())
+
+# Default = most recent week with any points > 0
+latest_completed = valid_weeks[-1] if valid_weeks else None
+
 week = st.sidebar.selectbox(
     "Select Week",
-    sorted(matchups["week"].dropna().unique()),
-    index=sorted(matchups["week"].dropna().unique()).index(latest_week)
-    if not pd.isna(latest_week)
-    else 0,
+    options=valid_weeks if valid_weeks else sorted(matchups["week"].dropna().unique()),
+    index=(len(valid_weeks) - 1) if valid_weeks else 0,
 )
 
 # =======================

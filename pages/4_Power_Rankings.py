@@ -9,6 +9,7 @@ if "data" not in st.session_state:
 
 data = st.session_state["data"]
 power = data["power"]
+st.write("Raw All-Play % values:", power["All-Play %"].head(10))
 
 st.set_page_config(page_title="Power Rankings", layout="wide")
 st.title("⚡ Power Rankings")
@@ -36,21 +37,25 @@ if missing:
     st.dataframe(power.head())
     st.stop()
 # ---- Numeric cleanup ----
+import re
+
 def clean_percent_column(series: pd.Series) -> pd.Series:
-    """Normalize mixed % or numeric values safely."""
-    s = series.astype(str).str.replace("%", "", regex=False).str.replace(",", "", regex=False).str.strip()
+    """Convert messy percent strings like '65%', '65.0 %', or '0.65' into floats."""
+    s = series.astype(str)
+    # Remove %, commas, and invisible space characters (Google Sheets adds weird ones)
+    s = s.apply(lambda x: re.sub(r"[%\s\u202F\u00A0,]", "", x))
     # Convert to numeric
     s = pd.to_numeric(s, errors="coerce")
-    # Handle fraction-style values (0–1)
+    # Scale decimals if 0–1 range
     if s.dropna().max() <= 1:
         s *= 100
     return s
 
-# Apply cleaner
+# ✅ Apply cleaner BEFORE other numeric conversions
 power["All-Play %"] = clean_percent_column(power["All-Play %"])
 power["Recent Form (3 wk avg)"] = clean_percent_column(power["Recent Form (3 wk avg)"])
 
-# Convert the rest normally
+# ✅ Now convert the rest
 for c in ["PF", "Avg Margin", "SoS (opp PF avg)", "Power Index"]:
     power[c] = pd.to_numeric(power[c], errors="coerce")
 

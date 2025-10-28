@@ -147,7 +147,25 @@ fig.update_layout(
 fig.update_traces(textposition="outside", cliponaxis=False)
 st.plotly_chart(fig, use_container_width=True)
 
+# =======================
+#   FULL RANKINGS TABLE
+# =======================
+st.subheader("📋 Full Power Rankings — Table")
 
+display = power.copy()
+display["All-Play %"] = display["All-Play %"].map(lambda x: f"{x:.1f}%" if pd.notna(x) else "")
+display["Recent Form (3 wk avg)"] = display["Recent Form (3 wk avg)"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
+display["PF"] = display["PF"].map(lambda x: f"{x:.0f}" if pd.notna(x) else "")
+display["Avg Margin"] = display["Avg Margin"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
+display["SoS (opp PF avg)"] = display["SoS (opp PF avg)"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
+display["Power Index"] = display["Power Index"].map(lambda x: f"{x:.2f}" if pd.notna(x) else "")
+
+# Order columns logically
+display = display[
+    ["Rank", "Team", "Power Index", "All-Play %", "PF", "Avg Margin", "Recent Form (3 wk avg)", "SoS (opp PF avg)"]
+]
+
+st.dataframe(display, use_container_width=True, hide_index=True)
 # ---- Download ----
 st.download_button(
     "⬇️ Download Power Rankings CSV",

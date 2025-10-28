@@ -41,7 +41,9 @@ for c in ["PF", "All-Play %", "Avg Margin", "Recent Form (3 wk avg)", "SoS (opp 
     power[c] = pd.to_numeric(power[c], errors="coerce")
 
 power = power.sort_values("Rank").reset_index(drop=True)
-
+# ---- Adjust percentages ----
+if power["All-Play %"].max() <= 1:  # detect if values are like 0.67 not 67
+    power["All-Play %"] = power["All-Play %"] * 100
 # ---- Summary Stats ----
 st.subheader("📈 Summary Insights")
 

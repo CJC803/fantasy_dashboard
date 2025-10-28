@@ -81,24 +81,23 @@ best_form_idx = power["Recent Form (3 wk avg)"].idxmax()
 best_form_team = power.loc[best_form_idx, "Team"]
 best_form_val = power.loc[best_form_idx, "Recent Form (3 wk avg)"]
 col4.metric("Best Recent Form (3w)", f"{best_form_val:.1f}%", best_form_team)
-
 # Optional secondary insights row
 with st.expander("🔎 Extra insights"):
-   # Safely get max rows
-ap_row = power.loc[power["All-Play %"].idxmax()] if power["All-Play %"].notna().any() else None
-sos_row = power.loc[power["SoS (opp PF avg)"].idxmax()] if power["SoS (opp PF avg)"].notna().any() else None
+    # Safely get max rows
+    ap_row = power.loc[power["All-Play %"].idxmax()] if power["All-Play %"].notna().any() else None
+    sos_row = power.loc[power["SoS (opp PF avg)"].idxmax()] if power["SoS (opp PF avg)"].notna().any() else None
 
-if ap_row is not None:
-    ap_team = ap_row["Team"]
-    ap_val = ap_row["All-Play %"]
-else:
-    ap_team, ap_val = "N/A", 0
+    if ap_row is not None:
+        ap_team = ap_row["Team"]
+        ap_val = ap_row["All-Play %"]
+    else:
+        ap_team, ap_val = "N/A", 0
 
-if sos_row is not None:
-    sos_team = sos_row["Team"]
-    sos_val = sos_row["SoS (opp PF avg)"]
-else:
-    sos_team, sos_val = "N/A", 0
+    if sos_row is not None:
+        sos_team = sos_row["Team"]
+        sos_val = sos_row["SoS (opp PF avg)"]
+    else:
+        sos_team, sos_val = "N/A", 0
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Best All-Play %", f"{ap_val:.1f}%", ap_team)

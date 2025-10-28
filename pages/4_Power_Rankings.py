@@ -35,10 +35,16 @@ if missing:
     st.error(f"Missing columns: {', '.join(missing)}")
     st.dataframe(power.head())
     st.stop()
-
 # ---- Numeric cleanup ----
+# Strip % symbols and clean whitespace
+power["All-Play %"] = power["All-Play %"].astype(str).str.replace("%", "").str.strip()
+
+# Convert all numeric columns
 for c in ["PF", "All-Play %", "Avg Margin", "Recent Form (3 wk avg)", "SoS (opp PF avg)", "Power Index"]:
     power[c] = pd.to_numeric(power[c], errors="coerce")
+
+power = power.sort_values("Rank").reset_index(drop=True)
+
 
 power = power.sort_values("Rank").reset_index(drop=True)
 # ---- Adjust percentages ----

@@ -42,17 +42,19 @@ def clean_percent_column(series: pd.Series) -> pd.Series:
     Convert messy percent strings like '65%', '65.0 %', ' 65 % ', or decimals '0.65'
     into floats in the 0–100 range.
     """
-    # Force string, strip %, commas, any whitespace (incl. non-breaking)
     s = series.astype(str).apply(lambda x: re.sub(r"[%\s\u202F\u00A0,]", "", x))
     s = pd.to_numeric(s, errors="coerce")
-    # If values look like fractions (<=1), scale to percent
     if s.dropna().max() <= 1:
         s = s * 100
     return s
 
 # ---- Numeric cleanup ----
 power["All-Play %"] = clean_percent_column(power["All-Play %"])
-power["Recent Form (3 wk avg)"] = clean_percent_column(power["Recent Form (3 wk avg)"])
+
+# Recent Form is *not* a percent — just numeric average PF over last 3 weeks
+power["Recent Form (3 wk avg)"] = pd.to_numeric(
+    power["Recent Form (3 wk avg)"], errors="coerce"
+)
 
 for c in ["PF", "Avg Margin", "SoS (opp PF avg)", "Power Index", "Rank"]:
     power[c] = pd.to_numeric(power[c], errors="coerce")
@@ -76,14 +78,14 @@ col1.metric("Top Team", top_team)
 col2.metric("Avg Power Index", f"{power['Power Index'].mean():.2f}")
 col3.metric("Avg PF", f"{power['PF'].mean():.1f}")
 
-# Best recent form (3-week)
+# Best recent form (3-week avg PF)
 best_form_idx = power["Recent Form (3 wk avg)"].idxmax()
 best_form_team = power.loc[best_form_idx, "Team"]
 best_form_val = power.loc[best_form_idx, "Recent Form (3 wk avg)"]
-col4.metric("Best Recent Form (3w)", f"{best_form_val:.1f}%", best_form_team)
-# Optional secondary insights row
+col4.metric("Best 3-Week Avg PF", f"{best_form_val:.1f}", best_form_team)
+
+# ---- Extra insights ----
 with st.expander("🔎 Extra insights"):
-    # Safely get max rows
     ap_row = power.loc[power["All-Play %"].idxmax()] if power["All-Play %"].notna().any() else None
     sos_row = power.loc[power["SoS (opp PF avg)"].idxmax()] if power["SoS (opp PF avg)"].notna().any() else None
 
@@ -109,8 +111,7 @@ with st.expander("🔎 Extra insights"):
 # =======================
 st.subheader("🏆 Full Power Rankings — Chart")
 
-# Sorted by Power Index, rank labels on bars
-chart_df = power.sort_values("Power Index", ascending=True).copy()  # low→high so the top is at bottom
+chart_df = power.sort_values("Power Index", ascending=True).copy()
 fig = px.bar(
     chart_df,
     x="Power Index",
@@ -135,10 +136,7 @@ fig.update_layout(
     showlegend=False,
     margin=dict(l=10, r=10, t=30, b=10),
 )
-fig.update_traces(
-    textposition="outside",
-    cliponaxis=False,
-)
+fig.update_traces(textposition="outside", cliponaxis=False)
 st.plotly_chart(fig, use_container_width=True)
 
 # =======================
@@ -146,26 +144,17 @@ st.plotly_chart(fig, use_container_width=True)
 # =======================
 st.subheader("📋 Full Power Rankings — Table")
 
-# Create a display copy with formatted percentages, leaving numeric df intact for any future math
 display = power.copy()
 display["All-Play %"] = display["All-Play %"].map(lambda x: f"{x:.1f}%" if pd.notna(x) else "")
-display["Recent Form (3 wk avg)"] = display["Recent Form (3 wk avg)"].map(lambda x: f"{x:.1f}%" if pd.notna(x) else "")
+display["Recent Form (3 wk avg)"] = display["Recent Form (3 wk avg)"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
 display["PF"] = display["PF"].map(lambda x: f"{x:.0f}" if pd.notna(x) else "")
 display["Avg Margin"] = display["Avg Margin"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
 display["SoS (opp PF avg)"] = display["SoS (opp PF avg)"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
 display["Power Index"] = display["Power Index"].map(lambda x: f"{x:.2f}" if pd.notna(x) else "")
 
-# Reorder columns nicely
-display = display[[
-    "Rank",
-    "Team",
-    "Power Index",
-    "All-Play %",
-    "PF",
-    "Avg Margin",
-    "Recent Form (3 wk avg)",
-    "SoS (opp PF avg)",
-]]
+display = display[
+    ["Rank", "Team", "Power Index", "All-Play %", "PF", "Avg Margin", "Recent Form (3 wk avg)", "SoS (opp PF avg)"]
+]
 
 st.dataframe(display, use_container_width=True, hide_index=True)
 

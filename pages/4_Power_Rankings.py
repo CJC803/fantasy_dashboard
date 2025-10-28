@@ -36,28 +36,25 @@ if missing:
     st.dataframe(power.head())
     st.stop()
 # ---- Numeric cleanup ----
-# Clean % symbols and stray characters
-power["All-Play %"] = (
-    power["All-Play %"]
-    .astype(str)
-    .str.replace("%", "", regex=False)
-    .str.replace(",", "", regex=False)
-    .str.strip()
-)
+def clean_percent_column(series: pd.Series) -> pd.Series:
+    """Normalize mixed % or numeric values safely."""
+    s = series.astype(str).str.replace("%", "", regex=False).str.replace(",", "", regex=False).str.strip()
+    # Convert to numeric
+    s = pd.to_numeric(s, errors="coerce")
+    # Handle fraction-style values (0–1)
+    if s.dropna().max() <= 1:
+        s *= 100
+    return s
 
-# Convert all numeric columns safely
-numeric_cols = ["PF", "All-Play %", "Avg Margin", "Recent Form (3 wk avg)", "SoS (opp PF avg)", "Power Index"]
-for c in numeric_cols:
+# Apply cleaner
+power["All-Play %"] = clean_percent_column(power["All-Play %"])
+power["Recent Form (3 wk avg)"] = clean_percent_column(power["Recent Form (3 wk avg)"])
+
+# Convert the rest normally
+for c in ["PF", "Avg Margin", "SoS (opp PF avg)", "Power Index"]:
     power[c] = pd.to_numeric(power[c], errors="coerce")
 
-# Detect and scale if sheet uses fractions (0–1)
-if power["All-Play %"].dropna().max() <= 1:
-    power["All-Play %"] = power["All-Play %"] * 100
-
-power = power.sort_values("Rank").reset_index(drop=True)
-
-
-power = power.sort_values("Rank").reset_index(drop=True)
+power = power.sort_values("Rank", ascending=True).reset_index(drop=True)
 # ---- Adjust percentages ----
 if power["All-Play %"].max() <= 1:  # detect if values are like 0.67 not 67
     power["All-Play %"] = power["All-Play %"] * 100

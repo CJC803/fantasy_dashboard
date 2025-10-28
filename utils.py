@@ -25,9 +25,23 @@ def load_all():
         "matchups":  load_csv(MATCHUPS_URL),
     }
 
-def week_selector(df, week_col="Week"):
-    """Sidebar week selector based on available data."""
-    if week_col not in df.columns:
-        return None
+def week_selector(df, week_col="week", default_week=None):
+    """
+    Creates a Streamlit week selector with optional default value.
+    If default_week isn't found, defaults to the last available week.
+    """
     weeks = sorted(df[week_col].dropna().unique())
-    return st.sidebar.selectbox("Select Week", weeks, index=len(weeks)-1)
+
+    # Pick default index
+    if default_week in weeks:
+        default_index = weeks.index(default_week)
+    else:
+        default_index = len(weeks) - 1  # last week if default missing
+
+    return st.selectbox(
+        "Select Week",
+        options=weeks,
+        index=default_index if weeks else 0,
+        key="week_selector"
+    )
+

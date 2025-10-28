@@ -3,97 +3,93 @@ import pandas as pd
 import plotly.express as px
 from utils import load_all
 
-# 🔒 Ensure session_state is populated
+# ---- Load Data ----
 if "data" not in st.session_state:
     st.session_state["data"] = load_all()
 
 data = st.session_state["data"]
 power = data["power"]
 
+st.set_page_config(page_title="Power Rankings", layout="wide")
 st.title("⚡ Power Rankings")
+
 if power.empty:
     st.warning("No power ranking data found.")
-else:
-    # 🔍 Detect columns dynamically
-    team_col = next((c for c in power.columns if "team" in c.lower()), None)
-    score_col = next(
-        (c for c in power.columns if "score" in c.lower() or "power" in c.lower() or "rank" in c.lower()),
-        None
+    st.stop()
+
+# ---- Clean up dataframe ----
+power.columns = power.columns.str.strip()
+expected_cols = [
+    "Rank",
+    "Team",
+    "PF",
+    "All-Play %",
+    "Avg Margin",
+    "Recent Form (3 wk avg)",
+    "SoS (opp PF avg)",
+    "Power Index",
+]
+
+missing = [c for c in expected_cols if c not in power.columns]
+if missing:
+    st.error(f"Missing columns: {', '.join(missing)}")
+    st.dataframe(power.head())
+    st.stop()
+
+# ---- Numeric cleanup ----
+for c in ["PF", "All-Play %", "Avg Margin", "Recent Form (3 wk avg)", "SoS (opp PF avg)", "Power Index"]:
+    power[c] = pd.to_numeric(power[c], errors="coerce")
+
+power = power.sort_values("Rank").reset_index(drop=True)
+
+# ---- Summary Stats ----
+st.subheader("📈 Summary Insights")
+
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Top Team", power.loc[0, "Team"])
+col2.metric("Avg Power Index", f"{power['Power Index'].mean():.2f}")
+col3.metric("Avg PF", f"{power['PF'].mean():.1f}")
+col4.metric("Avg Margin", f"{power['Avg Margin'].mean():.1f}")
+
+# ---- Power Index vs All-Play Scatter ----
+with st.expander("📊 View Power Index vs All-Play % Chart", expanded=False):
+    fig = px.scatter(
+        power,
+        x="All-Play %",
+        y="Power Index",
+        text="Team",
+        color="Recent Form (3 wk avg)",
+        size="PF",
+        color_continuous_scale="Blues",
+        title="Power Index vs All-Play %",
+        hover_data=["Team", "PF", "Avg Margin", "SoS (opp PF avg)"],
     )
-    points_for_col = next(
-        (c for c in power.columns if "points for" in c.lower() or "pf" == c.lower().strip()), None
-    )
+    fig.update_traces(textposition="top center")
+    st.plotly_chart(fig, use_container_width=True)
 
-    if not team_col or not score_col:
-        st.error("Couldn't identify team or score columns. Please check your sheet headers.")
-        st.dataframe(power.head())
-    else:
-        # 🧹 Clean column names
-        power.columns = power.columns.str.strip()
-        power = power.loc[:, ~power.columns.duplicated()]
+# ---- Rankings Table ----
+st.subheader("🏆 Full Power Rankings")
+styled = power.style.background_gradient(
+    subset=["Power Index"], cmap="YlGnBu"
+).format({
+    "All-Play %": "{:.1f}%",
+    "Avg Margin": "{:.1f}",
+    "PF": "{:.0f}",
+    "Recent Form (3 wk avg)": "{:.1f}",
+    "SoS (opp PF avg)": "{:.1f}",
+    "Power Index": "{:.2f}",
+})
 
-        # ✅ Clean numeric columns
-        power[score_col] = pd.to_numeric(power[score_col], errors="coerce")
-        if points_for_col:
-            power[points_for_col] = pd.to_numeric(power[points_for_col], errors="coerce")
+st.dataframe(
+    styled,
+    use_container_width=True,
+    hide_index=True,
+)
 
-        # ✅ Sort descending so best scores are first
-        power = power.sort_values(score_col, ascending=False).reset_index(drop=True)
-
-        # ✅ If 'Rank' already exists, rename it to avoid collision
-        if "Rank" in power.columns:
-            power = power.rename(columns={"Rank": "Original Rank"})
-
-        # ✅ Assign Rank so 1 = best score
-        power["Rank"] = range(1, len(power) + 1)
-
-        # === Chart (Rank 1 = top, biggest bar) ===
-        power = power.sort_values("Rank", ascending=True)
-
-        hover_cols = [team_col, score_col]
-        if points_for_col:
-            hover_cols.append(points_for_col)
-
-        fig = px.bar(
-            power,
-            x=score_col,
-            y=team_col,
-            orientation="h",
-            color=score_col,
-            text="Rank",
-            hover_data=hover_cols,
-            color_continuous_scale="Viridis",
-            title="🏆 Power Rankings (1 = Highest)"
-        )
-        fig.update_layout(
-            showlegend=False,
-            xaxis_title="Score",
-            yaxis_title="Team"
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
-
-        # === Table (clean and safe) ===
-        subset_cols = ["Rank", team_col, score_col]
-        if points_for_col:
-            subset_cols.append(points_for_col)
-
-        subset_cols = pd.unique(subset_cols).tolist()
-        df_display = power[subset_cols].copy()
-        df_display.columns = [str(c).strip() for c in df_display.columns]
-
-        # Deduplicate manually if needed
-        seen = {}
-        new_cols = []
-        for c in df_display.columns:
-            if c in seen:
-                seen[c] += 1
-                new_cols.append(f"{c}_{seen[c]}")
-            else:
-                seen[c] = 0
-                new_cols.append(c)
-        df_display.columns = new_cols
-
-        df_display = df_display.sort_values("Rank", ascending=True).reset_index(drop=True)
-
-        st.dataframe(df_display, use_container_width=True)
+# ---- Download ----
+st.download_button(
+    "⬇️ Download Power Rankings CSV",
+    data=power.to_csv(index=False).encode("utf-8"),
+    file_name="power_rankings.csv",
+    mime="text/csv",
+)

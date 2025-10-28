@@ -84,11 +84,15 @@ else:
             x="Team",
             y="Win%",
             color="Win%",
-            text="Win%",
             color_continuous_scale=px.colors.sequential.Blues_r,
             title="Cumulative All-Play Win Percentage",
         )
-        fig.update_traces(texttemplate="%{text:.3f}", textposition="outside")
+        
+        # Remove text labels above bars
+        fig.update_traces(
+            hovertemplate="<b>%{x}</b><br>Win%: %{y:.3f}<extra></extra>"
+        )
+        
         fig.update_layout(
             plot_bgcolor="rgba(0,0,0,0)",
             paper_bgcolor="rgba(0,0,0,0)",
@@ -99,6 +103,7 @@ else:
             margin=dict(t=60, b=20),
         )
         st.plotly_chart(fig, use_container_width=True)
+
 
         # === Step 5: Detailed Table ===
         st.subheader("📋 Detailed Standings")

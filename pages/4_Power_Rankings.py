@@ -36,12 +36,23 @@ if missing:
     st.dataframe(power.head())
     st.stop()
 # ---- Numeric cleanup ----
-# Strip % symbols and clean whitespace
-power["All-Play %"] = power["All-Play %"].astype(str).str.replace("%", "").str.strip()
+# Clean % symbols and stray characters
+power["All-Play %"] = (
+    power["All-Play %"]
+    .astype(str)
+    .str.replace("%", "", regex=False)
+    .str.replace(",", "", regex=False)
+    .str.strip()
+)
 
-# Convert all numeric columns
-for c in ["PF", "All-Play %", "Avg Margin", "Recent Form (3 wk avg)", "SoS (opp PF avg)", "Power Index"]:
+# Convert all numeric columns safely
+numeric_cols = ["PF", "All-Play %", "Avg Margin", "Recent Form (3 wk avg)", "SoS (opp PF avg)", "Power Index"]
+for c in numeric_cols:
     power[c] = pd.to_numeric(power[c], errors="coerce")
+
+# Detect and scale if sheet uses fractions (0–1)
+if power["All-Play %"].dropna().max() <= 1:
+    power["All-Play %"] = power["All-Play %"] * 100
 
 power = power.sort_values("Rank").reset_index(drop=True)
 

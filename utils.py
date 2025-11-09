@@ -11,7 +11,7 @@ TRANSACTIONS_URL = "https://docs.google.com/spreadsheets/d/18JjC_OdQrs1uu4hrUdUT
 @st.cache_data(ttl=300)
 def load_csv(url):
     try:
-        return pd.read_csv(url)
+        return pd.read_csv(url, keep_default_na=False, dtype=str)
     except Exception as e:
         st.warning(f"⚠️ Could not load {url}: {e}")
         return pd.DataFrame()

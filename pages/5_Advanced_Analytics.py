@@ -96,25 +96,6 @@ corr_df = (
 
 top_corr = corr_df.head(5)
 st.dataframe(top_corr.style.format("{:.2f}"), use_container_width=True)
-
-fig_corr = px.bar(
-    top_corr,
-    x=top_corr.index,
-    y="Correlation",
-    color="Correlation",
-    color_continuous_scale="Blues",
-    text="Correlation",
-)
-fig_corr.update_traces(texttemplate="%{text:.2f}", textposition="outside")
-fig_corr.update_layout(
-    title="Top Factors Correlating with Power Index",
-    xaxis_title="",
-    yaxis_title="Correlation",
-    margin=dict(l=10, r=10, t=40, b=10),
-)
-st.plotly_chart(fig_corr, use_container_width=True)
-
-
 # -----------------------------------
 # Luck Chart and Leaderboard
 # -----------------------------------

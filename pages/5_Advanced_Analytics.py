@@ -305,17 +305,3 @@ with st.expander("📋 Cluster Breakdown"):
         hide_index=True,
     )
 
-# -----------------------------------
-# ✅ Suggestions for Future Enhancements
-# -----------------------------------
-with st.expander("💡 Suggestions for Future Enhancements"):
-    st.markdown(
-        """
-        - Add a **trend tracker** for weekly Power Index and Luck Δ over time.
-        - Include a **SoS Influence Chart** comparing Power Index vs SoS Played.
-        - Use **correlation regression lines** to quantify relationships.
-        - Integrate a **Luck + Power quadrant chart** to classify teams.
-        - Add **multi-season comparison** (historical tracking).
-        - Allow **filtering by cluster group** for deeper radar comparisons.
-        """
-    )

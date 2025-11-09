@@ -19,6 +19,19 @@ if power.empty:
 
 # ---- Normalize columns ----
 power.columns = power.columns.str.strip()
+# --- Normalize weird space/unicode characters ---
+power.columns = power.columns.str.replace(r"\s+", " ", regex=True)
+power.columns = power.columns.str.replace("\u00a0", " ", regex=False)  # non-breaking space
+power.columns = power.columns.str.replace("\u202f", " ", regex=False)  # narrow NBSP
+
+# --- Column aliasing (handles subtle variants automatically) ---
+rename_map = {
+    "Actual Win%": "Actual Win %",
+    "Actual Win %": "Actual Win %",   # handles unicode space
+    "Actual Win %": "Actual Win %",
+    "Actual Win Percentage": "Actual Win %",
+}
+power = power.rename(columns=rename_map)
 
 expected_cols = [
     "Rank",

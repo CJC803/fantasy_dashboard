@@ -261,15 +261,37 @@ if team1 and team2:
     row2 = scaled[scaled["Team"] == team2].iloc[0]
 
     fig_overlay = go.Figure()
-    fig_overlay.add_trace(go.Scatterpolar(r=[row1[m] for m in metrics], theta=metrics, fill="toself", name=team1))
-    fig_overlay.add_trace(go.Scatterpolar(r=[row2[m] for m in metrics], theta=metrics, fill="toself", name=team2))
-    fig_overlay.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
-        showlegend=True,
-        legend=dict(orientation="h", y=-0.2),
-        margin=dict(l=10, r=10, t=30, b=10),
+
+fig_overlay.add_trace(
+    go.Scatterpolar(
+        r=[row1[m] for m in metrics],
+        theta=metrics,
+        fill="toself",
+        name=team1,
+        line=dict(color="#1f77b4", width=2),  # blue
+        fillcolor="rgba(31, 119, 180, 0.3)",
     )
-    st.plotly_chart(fig_overlay, use_container_width=True)
+)
+
+fig_overlay.add_trace(
+    go.Scatterpolar(
+        r=[row2[m] for m in metrics],
+        theta=metrics,
+        fill="toself",
+        name=team2,
+        line=dict(color="#ff7f0e", width=2),  # orange
+        fillcolor="rgba(255, 127, 14, 0.3)",
+    )
+)
+
+fig_overlay.update_layout(
+    polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+    showlegend=True,
+    legend=dict(orientation="h", y=-0.2),
+    margin=dict(l=10, r=10, t=30, b=10),
+)
+st.plotly_chart(fig_overlay, use_container_width=True)
+
 
 # -----------------------------------
 # 🤖 Team Clustering by Power Metrics

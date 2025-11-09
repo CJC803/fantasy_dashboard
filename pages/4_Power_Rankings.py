@@ -160,7 +160,7 @@ fig2 = px.scatter(
     y="Actual Win %",
     color="Luck Δ",
     text="Team",
-    color_continuous_scale="RdYlGn",
+    color_continuous_scale="Blues_r",
     hover_data={"Luck Δ": ":.1f"},
 )
 fig2.add_shape(

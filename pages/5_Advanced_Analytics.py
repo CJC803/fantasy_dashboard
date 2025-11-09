@@ -120,7 +120,7 @@ metrics = [
 selected_metrics = st.multiselect(
     "Select metrics to compare with Power Index",
     metrics,
-    default=["All-Play %", "Actual Win %", "Avg Margin", "SoS Remaining"],
+    default=metrics,  # Show all metrics by default
 )
 
 if selected_metrics:

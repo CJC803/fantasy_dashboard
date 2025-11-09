@@ -104,6 +104,7 @@ power.reset_index(drop=True, inplace=True)
 # -----------------------------------
 st.subheader("📊 Metric Correlation Explorer")
 
+# Metrics to analyze (excluding Power Index)
 metrics = [
     "All-Play %",
     "Actual Win %",
@@ -114,13 +115,12 @@ metrics = [
     "SoS Remaining",
     "SoS Δ vs Avg",
     "PF",
-    "Power Index",
 ]
 
 selected_metrics = st.multiselect(
-    "Select metrics to compare with Power Index",
+    "Select metrics to analyze correlation with Power Index",
     metrics,
-    default=metrics,
+    default=metrics,  # Default = all metrics (excluding Power Index)
 )
 
 if selected_metrics:
@@ -129,12 +129,16 @@ if selected_metrics:
         .corr(numeric_only=True)["Power Index"]
         .drop("Power Index")
         .sort_values(ascending=False)
-        .to_frame("Correlation")
+        .to_frame("Correlation with Power Index")
     )
+
     st.dataframe(
         corr_df.style.format("{:.2f}").background_gradient(cmap="Blues"),
         use_container_width=True,
     )
+else:
+    st.info("Select at least one metric to view correlation with Power Index.")
+
 
 # -----------------------------------
 # 🍀 Luck Index — Actual Win % vs All-Play %

@@ -148,31 +148,36 @@ if not luck_df.empty:
     col1, col2 = st.columns([3, 2])
     with col1:
         fig = px.scatter(
-            luck_df,
-            x="All-Play %",
-            y="Actual Win %",
-            color="Luck Δ",
-            text="Team",
-            color_continuous_scale="Blues_r",
-            hover_data={"Luck Δ": ":.1f"},
-            title="Luck vs Performance Scatter",
-        )
-        fig.add_shape(
-            type="line",
-            x0=luck_df["All-Play %"].min(),
-            y0=luck_df["All-Play %"].min(),
-            x1=luck_df["All-Play %"].max(),
-            y1=luck_df["All-Play %"].max(),
-            line=dict(color="gray", dash="dash"),
-        )
-        fig.update_traces(textposition="top center", marker=dict(size=9))
-        fig.update_layout(
-            xaxis_title="All-Play %",
-            yaxis_title="Actual Win %",
-            coloraxis_colorbar_title="Luck Δ",
-            margin=dict(l=10, r=10, t=30, b=10),
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    luck_df,
+    x="All-Play %",
+    y="Actual Win %",
+    color="Luck Δ",
+    color_continuous_scale="Blues_r",
+    hover_data={
+        "Team": True,
+        "All-Play %": ":.1f",
+        "Actual Win %": ":.1f",
+        "Luck Δ": ":.1f",
+    },
+    title="Luck vs Performance Scatter",
+)
+fig.add_shape(
+    type="line",
+    x0=luck_df["All-Play %"].min(),
+    y0=luck_df["All-Play %"].min(),
+    x1=luck_df["All-Play %"].max(),
+    y1=luck_df["All-Play %"].max(),
+    line=dict(color="gray", dash="dash"),
+)
+fig.update_traces(marker=dict(size=9))
+fig.update_layout(
+    xaxis_title="All-Play %",
+    yaxis_title="Actual Win %",
+    coloraxis_colorbar_title="Luck Δ",
+    margin=dict(l=10, r=10, t=30, b=10),
+)
+st.plotly_chart(fig, use_container_width=True)
+
 
     with col2:
         st.markdown("### 🍀 Luckiest & Unluckiest Teams")

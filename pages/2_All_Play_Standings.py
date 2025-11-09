@@ -3,132 +3,142 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 
+# -----------------------------------
+# Page Setup
+# -----------------------------------
+st.set_page_config(page_title="All-Play Standings", layout="wide")
 st.title("🏈 All-Play Standings")
 
-# === Load current data ===
+# -----------------------------------
+# Load Data
+# -----------------------------------
 data = st.session_state.get("data", {})
 allplay = data.get("allplay", pd.DataFrame())
 
 if allplay.empty:
     st.info("No All-Play data available.")
+    st.stop()
+
+# -----------------------------------
+# Normalize and Validate
+# -----------------------------------
+allplay.columns = allplay.columns.str.strip()
+if "Win%" not in allplay.columns:
+    st.error("Missing 'Win%' column in data.")
+    st.stop()
+
+# Ensure numeric Win%
+allplay["Win%"] = pd.to_numeric(allplay["Win%"], errors="coerce")
+allplay = allplay.dropna(subset=["Team", "Win%"])
+allplay = allplay.sort_values("Win%", ascending=False).reset_index(drop=True)
+
+# -----------------------------------
+# Daily Snapshot Tracking
+# -----------------------------------
+today = datetime.now().strftime("%Y-%m-%d")
+st.session_state.setdefault("allplay_history", {})
+
+if today not in st.session_state["allplay_history"]:
+    st.session_state["allplay_history"][today] = allplay.copy()
+    st.toast(f"📊 Saved daily snapshot for {today}", icon="✅")
+
+history = st.session_state["allplay_history"]
+merged = allplay.copy()
+
+if len(history) >= 2:
+    dates = sorted(history.keys())
+    prev_day = dates[-2]
+    prev_df = history[prev_day]
+    merged = pd.merge(
+        allplay,
+        prev_df[["team_id", "Win%"]],
+        on="team_id",
+        how="left",
+        suffixes=("", "_prev")
+    )
+    merged["Δ Win%"] = merged["Win%"] - merged["Win%_prev"]
+    trend_available = True
 else:
-    # === Normalize ===
-    allplay.columns = allplay.columns.str.strip()
-    if "Win%" not in allplay.columns:
-        st.error("Missing 'Win%' column in data.")
-    else:
-        allplay = allplay.sort_values("Win%", ascending=False).reset_index(drop=True)
+    merged["Δ Win%"] = 0.0
+    trend_available = False
 
-        # === Step 1: Log daily snapshot ===
-        today = datetime.now().strftime("%Y-%m-%d")
-        st.session_state.setdefault("allplay_history", {})
+# -----------------------------------
+# Expandable Insights Section
+# -----------------------------------
+st.subheader("📊 Summary Insights")
 
-        # Store snapshot only once per day
-        if today not in st.session_state["allplay_history"]:
-            st.session_state["allplay_history"][today] = allplay.copy()
-            st.toast(f"📊 Saved daily snapshot for {today}", icon="✅")
+if not merged.empty:
+    top_team = merged.iloc[0]["Team"]
+    top_win = merged.iloc[0]["Win%"]
+    bottom_team = merged.iloc[-1]["Team"]
+    bottom_win = merged.iloc[-1]["Win%"]
 
-        # === Step 2: Compare to previous day ===
-        history = st.session_state["allplay_history"]
-        merged = allplay.copy()
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Teams Tracked", len(merged))
+    c2.metric("Top Team", f"{top_team}", f"{top_win:.3f}")
+    c3.metric("Lowest Team", f"{bottom_team}", f"{bottom_win:.3f}")
 
-        if len(history) >= 2:
-            dates = sorted(history.keys())
-            prev_day, curr_day = dates[-2], dates[-1]
-            prev_df = history[prev_day]
-
-            merged = pd.merge(
-                allplay,
-                prev_df[["team_id", "Win%"]],
-                on="team_id",
-                how="left",
-                suffixes=("", "_prev")
-            )
-            merged["Δ Win%"] = merged["Win%"] - merged["Win%_prev"]
-            trend_available = True
-        else:
-            merged["Δ Win%"] = 0.0
-            trend_available = False
-
-        # === Step 3: KPI metrics ===
-        # Drop any rows missing key stats
-        merged = merged.dropna(subset=["Team", "Win%"])
-        
-        if not merged.empty:
-            top_team = merged.iloc[0]["Team"]
-            top_win = merged.iloc[0]["Win%"]
-        
-            bottom_team = merged.iloc[-1]["Team"]
-            bottom_win = merged.iloc[-1]["Win%"]
-        
-            # Handle non-numeric or missing values
-            top_win = float(top_win) if pd.notna(top_win) else 0
-            bottom_win = float(bottom_win) if pd.notna(bottom_win) else 0
-        
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Teams Tracked", len(merged))
-            c2.metric("Lowest All-Play Team", f"{bottom_team} ({bottom_win:.3f})")
-            c3.metric("Top Team", f"{top_team} ({top_win:.3f})")
-        else:
-            st.warning("⚠️ No valid teams or Win% data available.")
-
+    with st.expander("🔎 View Additional Insights"):
         if trend_available:
-            avg_delta = merged["Δ Win%"].mean()
             biggest_riser = merged.loc[merged["Δ Win%"].idxmax()]
             biggest_faller = merged.loc[merged["Δ Win%"].idxmin()]
+            avg_delta = merged["Δ Win%"].mean()
 
             st.markdown(
                 f"""
-                <div style='background-color:#111;padding:12px;border-radius:10px;margin-top:1rem;margin-bottom:1.2rem'>
-                    <h3 style='color:#ff9f43;margin:0;font-weight:600'>
-                        🥇 {top_team} leads ({top_win:.3f} Win%)<br>
-                        📈 Riser: {biggest_riser["Team"]} ({biggest_riser["Δ Win%"]:+.3f}) &nbsp;&nbsp;
-                        📉 Drop: {biggest_faller["Team"]} ({biggest_faller["Δ Win%"]:+.3f})
-                    </h3>
-                </div>
+                **Top Performer:** 🥇 {top_team} ({top_win:.3f} Win%)  
+                **Biggest Riser:** 📈 {biggest_riser["Team"]} (+{biggest_riser["Δ Win%"]:.3f})  
+                **Biggest Drop:** 📉 {biggest_faller["Team"]} ({biggest_faller["Δ Win%"]:+.3f})  
+                **League Avg Change:** {avg_delta:+.3f}
                 """,
-                unsafe_allow_html=True
             )
+        else:
+            st.info("No trend data yet — daily tracking starts today.")
 
-        # === Step 4: Chart ===
-        fig = px.bar(
-            merged,
-            x="Team",
-            y="Win%",
-            color="Win%",
-            color_continuous_scale=px.colors.sequential.Blues_r,
-            title="Cumulative All-Play Win Percentage",
-        )
-        
-        # Remove text labels above bars
-        fig.update_traces(
-            hovertemplate="<b>%{x}</b><br>Win%: %{y:.3f}<extra></extra>"
-        )
-        
-        fig.update_layout(
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#f0f0f0"),
-            xaxis_title=None,
-            yaxis_title="Win %",
-            coloraxis_showscale=False,
-            margin=dict(t=60, b=20),
-        )
-        st.plotly_chart(fig, use_container_width=True)
+# -----------------------------------
+# Bar Chart Visualization
+# -----------------------------------
+st.subheader("📈 All-Play Win Percentage")
 
+fig = px.bar(
+    merged,
+    x="Team",
+    y="Win%",
+    color="Win%",
+    color_continuous_scale=px.colors.sequential.Blues_r,
+    title="Cumulative All-Play Win Percentage",
+)
 
-        # === Step 5: Detailed Table ===
-        st.subheader("📋 Detailed Standings")
+fig.update_traces(hovertemplate="<b>%{x}</b><br>Win%: %{y:.3f}<extra></extra>")
+fig.update_layout(
+    plot_bgcolor="rgba(0,0,0,0)",
+    paper_bgcolor="rgba(0,0,0,0)",
+    font=dict(color="#f0f0f0"),
+    xaxis_title=None,
+    yaxis_title="Win %",
+    coloraxis_showscale=False,
+    margin=dict(t=60, b=20),
+)
+st.plotly_chart(fig, use_container_width=True)
 
-        def style_delta(val):
-            color = "#2ecc71" if val > 0 else "#e74c3c" if val < 0 else "#999"
-            return f"color:{color}; font-weight:600"
+# -----------------------------------
+# Detailed Table
+# -----------------------------------
+st.subheader("📋 Detailed Standings")
 
-        merged = merged[["Team", "Wins", "Losses", "Win%", "Δ Win%"]]
-        styled = merged.style.format({"Win%": "{:.3f}", "Δ Win%": "{:+.3f}"}).applymap(style_delta, subset=["Δ Win%"])
-        st.dataframe(styled, use_container_width=True, hide_index=True)
+def style_delta(val):
+    color = "#2ecc71" if val > 0 else "#e74c3c" if val < 0 else "#999"
+    return f"color:{color}; font-weight:600"
 
-        # === Footer ===
-        st.caption(
-            f"🕒 Updated {datetime.now():%b %d, %Y %I:%M %p} — comparing daily snapshots ({'trend active' if trend_available else 'first day recorded'})."
-        )
+merged = merged[["Team", "Wins", "Losses", "Win%", "Δ Win%"]]
+styled = (
+    merged.style.format({"Win%": "{:.3f}", "Δ Win%": "{:+.3f}"})
+    .applymap(style_delta, subset=["Δ Win%"])
+)
+st.dataframe(styled, use_container_width=True, hide_index=True)
+
+# -----------------------------------
+# Footer
+# -----------------------------------
+status = "trend active" if trend_available else "first day recorded"
+st.caption(f"🕒 Updated {datetime.now():%b %d, %Y %I:%M %p} — {status}.")

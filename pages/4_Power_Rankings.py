@@ -4,34 +4,39 @@ import pandas as pd
 import plotly.express as px
 from utils import load_all
 
+# -------------------------------
+# Page Setup
+# -------------------------------
 st.set_page_config(page_title="Power Rankings", layout="wide")
 st.title("⚡ Power Rankings")
 
-# ---- Load Data ----
+# -------------------------------
+# Load Data
+# -------------------------------
 if "data" not in st.session_state:
     st.session_state["data"] = load_all()
 data = st.session_state["data"]
-power = data["power"]
+power = data.get("power", pd.DataFrame())
 
 if power.empty:
     st.warning("No power ranking data found.")
     st.stop()
 
-# ---- Normalize columns ----
-power.columns = power.columns.str.strip()
-# --- Normalize weird space/unicode characters ---
+# -------------------------------
+# Normalize & Validate Columns
+# -------------------------------
+power.columns = power.columns.astype(str).str.strip()
 power.columns = power.columns.str.replace(r"\s+", " ", regex=True)
-power.columns = power.columns.str.replace("\u00a0", " ", regex=False)  # non-breaking space
-power.columns = power.columns.str.replace("\u202f", " ", regex=False)  # narrow NBSP
+power.columns = power.columns.str.replace("\u00a0", " ", regex=False)
+power.columns = power.columns.str.replace("\u202f", " ", regex=False)
 
-# --- Column aliasing (handles subtle variants automatically) ---
 rename_map = {
+    "Actual Win": "Actual Win %",
     "Actual Win%": "Actual Win %",
-    "Actual Win %": "Actual Win %",   # handles unicode space
     "Actual Win %": "Actual Win %",
     "Actual Win Percentage": "Actual Win %",
 }
-power = power.rename(columns=rename_map)
+power.rename(columns=rename_map, inplace=True)
 
 expected_cols = [
     "Rank",
@@ -52,14 +57,15 @@ if missing:
     st.dataframe(power.head())
     st.stop()
 
-# ---- Helpers ----
+# -------------------------------
+# Helpers
+# -------------------------------
 def clean_percent_column(series: pd.Series) -> pd.Series:
-    """Handles messy % strings and converts to float 0–100"""
+    """Handles messy % strings and converts to float 0–100."""
     def normalize(x):
         if pd.isna(x):
             return None
-        x = str(x)
-        x = re.sub(r"[^0-9.\-]", "", x)
+        x = re.sub(r"[^0-9.\-]", "", str(x))
         try:
             val = float(x)
             return val * 100 if 0 <= val <= 1 else val
@@ -67,9 +73,12 @@ def clean_percent_column(series: pd.Series) -> pd.Series:
             return None
     return pd.Series([normalize(v) for v in series], dtype="float")
 
-# ---- Numeric cleanup ----
-power["All-Play %"] = clean_percent_column(power["All-Play %"])
-power["Actual Win %"] = clean_percent_column(power["Actual Win %"])
+
+# -------------------------------
+# Numeric Cleanup
+# -------------------------------
+for col in ["All-Play %", "Actual Win %"]:
+    power[col] = clean_percent_column(power[col])
 
 for c in [
     "PF",
@@ -84,14 +93,15 @@ for c in [
 
 # Sort
 if power["Rank"].notna().any():
-    power = power.sort_values("Rank", ascending=True).reset_index(drop=True)
+    power.sort_values("Rank", inplace=True)
 else:
-    power = power.sort_values("Power Index", ascending=False).reset_index(drop=True)
+    power.sort_values("Power Index", ascending=False, inplace=True)
     power["Rank"] = range(1, len(power) + 1)
+power.reset_index(drop=True, inplace=True)
 
-# =======================
-#      INSIGHTS TOP
-# =======================
+# -------------------------------
+# Summary Insights
+# -------------------------------
 st.subheader("📈 Summary Insights")
 col1, col2, col3, col4 = st.columns(4)
 
@@ -107,7 +117,6 @@ col4.metric(
     power.loc[best_form_idx, "Team"],
 )
 
-# ---- Extra insights ----
 with st.expander("🔎 Extra insights"):
     ap_row = power.loc[power["All-Play %"].idxmax()] if power["All-Play %"].notna().any() else None
     win_row = power.loc[power["Actual Win %"].idxmax()] if power["Actual Win %"].notna().any() else None
@@ -121,9 +130,9 @@ with st.expander("🔎 Extra insights"):
     if sos_row is not None:
         c3.metric("Hardest SoS (opp PF)", f"{sos_row['SoS (opp PF avg)']:.1f}", sos_row["Team"])
 
-# =======================
-#  FULL RANKINGS CHART
-# =======================
+# -------------------------------
+# Full Rankings Bar Chart
+# -------------------------------
 st.subheader("🏆 Full Power Rankings — Chart")
 
 chart_df = power.sort_values("Power Index", ascending=True).copy()
@@ -134,7 +143,6 @@ fig = px.bar(
     orientation="h",
     text=chart_df["Rank"].astype(int).astype(str),
     hover_data={
-        "Team": True,
         "Power Index": ":.2f",
         "All-Play %": ":.1f",
         "Actual Win %": ":.1f",
@@ -156,9 +164,9 @@ fig.update_layout(
 fig.update_traces(textposition="outside", cliponaxis=False)
 st.plotly_chart(fig, use_container_width=True)
 
-# =======================
-#  LUCK INDEX SCATTER
-# =======================
+# -------------------------------
+# Luck Index Scatter
+# -------------------------------
 st.subheader("🍀 Luck Index — Actual Win % vs All-Play %")
 
 luck_df = power.dropna(subset=["Actual Win %", "All-Play %"]).copy()
@@ -172,7 +180,6 @@ fig_luck = px.scatter(
     color="Luck Δ",
     color_continuous_scale="RdYlGn",
     hover_data={
-        "Team": True,
         "All-Play %": ":.1f",
         "Actual Win %": ":.1f",
         "Luck Δ": ":.1f",
@@ -195,9 +202,9 @@ fig_luck.update_layout(
 )
 st.plotly_chart(fig_luck, use_container_width=True)
 
-# =======================
-#   FULL RANKINGS TABLE
-# =======================
+# -------------------------------
+# Full Rankings Table
+# -------------------------------
 st.subheader("📋 Full Power Rankings — Table")
 
 display = power.copy()
@@ -224,9 +231,11 @@ display = display[
         "SoS (opp PF avg)",
     ]
 ]
-
 st.dataframe(display, use_container_width=True, hide_index=True)
 
+# -------------------------------
+# Download Button
+# -------------------------------
 st.download_button(
     "⬇️ Download Power Rankings CSV",
     data=power.to_csv(index=False).encode("utf-8"),

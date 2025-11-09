@@ -187,29 +187,6 @@ else:
     st.info("Not enough data to compute luck metrics.")
 
 # -----------------------------------
-# 🔥 Luck + Power Heat Map
-# -----------------------------------
-st.subheader("🔥 Luck + Power Index Heat Map")
-
-if not luck_df.empty:
-    heat_df = luck_df[["Team", "Luck Δ", "Power Index"]].copy()
-    fig_heat = px.density_heatmap(
-        heat_df,
-        x="Luck Δ",
-        y="Power Index",
-        color_continuous_scale="Blues_r",
-        nbinsx=10,
-        nbinsy=10,
-        title="Luck vs Power Index Density",
-    )
-    fig_heat.update_layout(
-        margin=dict(l=20, r=20, t=40, b=20),
-        xaxis_title="Luck Δ (Actual Win % - All-Play %)",
-        yaxis_title="Power Index",
-    )
-    st.plotly_chart(fig_heat, use_container_width=True)
-
-# -----------------------------------
 # 🧭 Team Radar Visualization
 # -----------------------------------
 st.subheader("📡 Normalized Team Performance Radar")

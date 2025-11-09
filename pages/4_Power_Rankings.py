@@ -22,40 +22,30 @@ if power.empty:
     st.warning("No power ranking data found.")
     st.stop()
 
-# -------------------------------
-# Normalize & Validate Columns
-# -------------------------------
-power.columns = power.columns.astype(str).str.strip()
-power.columns = power.columns.str.replace(r"\s+", " ", regex=True)
-power.columns = power.columns.str.replace("\u00a0", " ", regex=False)
-power.columns = power.columns.str.replace("\u202f", " ", regex=False)
+# --- Normalize & Validate Columns ---
+import unicodedata
 
+# Normalize unicode, strip spaces, collapse multiple spaces, unify ASCII percent
+def normalize_header(s: str) -> str:
+    s = unicodedata.normalize("NFKC", str(s))  # fixes weird % or invisible chars
+    s = s.replace("\u00a0", " ").replace("\u202f", " ")  # NBSPs
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+power.columns = [normalize_header(c) for c in power.columns]
+
+# Handle column aliases and variants
 rename_map = {
     "Actual Win": "Actual Win %",
     "Actual Win%": "Actual Win %",
     "Actual Win %": "Actual Win %",
+    "Actual Win %": "Actual Win %",  # catches unicode spaces
+    "Actual Win %": "Actual Win %",  # catches narrow NBSP
     "Actual Win Percentage": "Actual Win %",
 }
 power.rename(columns=rename_map, inplace=True)
 
-expected_cols = [
-    "Rank",
-    "Team",
-    "PF",
-    "All-Play %",
-    "Actual Win %",
-    "Avg Margin",
-    "Recent Form (3-wk avg)",
-    "Recent Margin (3-wk avg)",
-    "SoS (opp PF avg)",
-    "Power Index",
-]
-
-missing = [c for c in expected_cols if c not in power.columns]
-if missing:
-    st.error(f"Missing columns: {', '.join(missing)}")
-    st.dataframe(power.head())
-    st.stop()
+st.code(repr(list(power.columns)), language="python")  # debug line
 
 # -------------------------------
 # Helpers

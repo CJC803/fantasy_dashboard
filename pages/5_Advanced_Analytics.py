@@ -240,7 +240,78 @@ if selected_team:
         margin=dict(l=10, r=10, t=30, b=10),
     )
     st.plotly_chart(fig_radar, use_container_width=True)
+# -----------------------------------
+# 🧩 Multi-Team Radar Overlay Comparison
+# -----------------------------------
+st.subheader("🧩 Compare Two Teams — Multi-Metric Radar Overlay")
 
+team_options = sorted(power["Team"].dropna().unique())
+col1, col2 = st.columns(2)
+team_a = col1.selectbox("Select Team A", team_options, key="team_a")
+team_b = col2.selectbox("Select Team B", team_options, key="team_b")
+
+if team_a and team_b:
+    scaled = power.copy()
+    scaler = MinMaxScaler(feature_range=(0, 100))
+    scaled[metrics] = scaler.fit_transform(scaled[metrics])
+
+    row_a = scaled[scaled["Team"] == team_a].iloc[0]
+    row_b = scaled[scaled["Team"] == team_b].iloc[0]
+
+    fig_compare = go.Figure()
+    fig_compare.add_trace(
+        go.Scatterpolar(r=[row_a[m] for m in metrics], theta=metrics, fill='toself', name=team_a)
+    )
+    fig_compare.add_trace(
+        go.Scatterpolar(r=[row_b[m] for m in metrics], theta=metrics, fill='toself', name=team_b)
+    )
+
+    fig_compare.update_layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+        showlegend=True,
+        legend=dict(orientation="h", y=-0.2),
+        margin=dict(l=10, r=10, t=30, b=10),
+    )
+    st.plotly_chart(fig_compare, use_container_width=True)
+
+# -----------------------------------
+# 🤖 Team Clustering by Power Metrics
+# -----------------------------------
+st.subheader("🤖 Team Clusters by Power Profile")
+
+from sklearn.cluster import KMeans
+import numpy as np
+
+cluster_features = ["All-Play %", "Actual Win %", "Avg Margin", "SoS Played", "Power Index"]
+cluster_df = power.dropna(subset=cluster_features).copy()
+
+# Normalize for fair clustering
+scaler = MinMaxScaler()
+scaled_features = scaler.fit_transform(cluster_df[cluster_features])
+
+# 3 clusters — you can adjust if you prefer
+kmeans = KMeans(n_clusters=3, n_init=10, random_state=42)
+cluster_df["Cluster"] = kmeans.fit_predict(scaled_features)
+
+fig_cluster = px.scatter_3d(
+    cluster_df,
+    x="Power Index",
+    y="Avg Margin",
+    z="SoS Played",
+    color="Cluster",
+    hover_name="Team",
+    color_continuous_scale="Blues_r",
+    title="Team Clusters by Power Profile",
+)
+fig_cluster.update_layout(margin=dict(l=10, r=10, t=40, b=10))
+st.plotly_chart(fig_cluster, use_container_width=True)
+
+with st.expander("📋 Cluster Breakdown"):
+    st.dataframe(
+        cluster_df[["Team", "Cluster"] + cluster_features],
+        use_container_width=True,
+        hide_index=True,
+    )
 # -----------------------------------
 # ✅ Suggestions for Future Enhancements
 # -----------------------------------

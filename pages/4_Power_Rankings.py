@@ -32,7 +32,6 @@ power.columns = (
     .str.replace("\ufeff", "", regex=False)  # remove hidden BOM
     .str.replace("SoSΔvsAvg", "SoS Δ vs Avg", regex=False)  # safeguard merges
 )
-st.write("Detected columns:", list(power.columns))
 rename_map = {
     "Actual Win": "Actual Win %",
     "Actual Win%": "Actual Win %",

@@ -33,6 +33,7 @@ power.columns = (
     .str.strip()
     .str.replace(r"\s+", " ", regex=True)
     .str.replace("\u00a0", " ", regex=False)
+    .str.replace("\ufeff", "", regex=False)
 )
 
 rename_map = {
@@ -42,8 +43,29 @@ rename_map = {
 }
 power.rename(columns=rename_map, inplace=True)
 
+expected_cols = [
+    "Rank",
+    "Team",
+    "PF",
+    "All-Play %",
+    "Actual Win %",
+    "Avg Margin",
+    "Recent Form (3-wk avg)",
+    "Recent Margin (3-wk avg)",
+    "SoS Played",
+    "SoS Remaining",
+    "SoS Δ vs Avg",
+    "Power Index",
+]
+
+missing = [c for c in expected_cols if c not in power.columns]
+if missing:
+    st.error(f"Missing columns: {', '.join(missing)}")
+    st.dataframe(power.head())
+    st.stop()
+
 # -----------------------------------
-# Helper: clean percent columns
+# Clean numeric and percentage columns
 # -----------------------------------
 def clean_percent(series):
     def to_float(x):
@@ -57,7 +79,6 @@ def clean_percent(series):
             return None
     return pd.Series([to_float(v) for v in series], dtype="float")
 
-
 for pct_col in ["All-Play %", "Actual Win %"]:
     power[pct_col] = clean_percent(power[pct_col])
 
@@ -66,7 +87,9 @@ numeric_cols = [
     "Avg Margin",
     "Recent Form (3-wk avg)",
     "Recent Margin (3-wk avg)",
-    "SoS (opp PF avg)",
+    "SoS Played",
+    "SoS Remaining",
+    "SoS Δ vs Avg",
     "Power Index",
     "Rank",
 ]
@@ -77,7 +100,7 @@ power.sort_values("Rank", inplace=True)
 power.reset_index(drop=True, inplace=True)
 
 # -----------------------------------
-# Dynamic Metric Correlation Selector
+# 📊 Metric Correlation Explorer
 # -----------------------------------
 st.subheader("📊 Metric Correlation Explorer")
 
@@ -87,7 +110,9 @@ metrics = [
     "Avg Margin",
     "Recent Form (3-wk avg)",
     "Recent Margin (3-wk avg)",
-    "SoS (opp PF avg)",
+    "SoS Played",
+    "SoS Remaining",
+    "SoS Δ vs Avg",
     "PF",
     "Power Index",
 ]
@@ -95,7 +120,7 @@ metrics = [
 selected_metrics = st.multiselect(
     "Select metrics to compare with Power Index",
     metrics,
-    default=["All-Play %", "Actual Win %", "Avg Margin"],
+    default=["All-Play %", "Actual Win %", "Avg Margin", "SoS Remaining"],
 )
 
 if selected_metrics:
@@ -106,7 +131,6 @@ if selected_metrics:
         .sort_values(ascending=False)
         .to_frame("Correlation")
     )
-
     st.dataframe(
         corr_df.style.format("{:.2f}").background_gradient(cmap="Blues"),
         use_container_width=True,
@@ -122,7 +146,6 @@ luck_df["Luck Δ"] = luck_df["Actual Win %"] - luck_df["All-Play %"]
 
 if not luck_df.empty:
     col1, col2 = st.columns([3, 2])
-
     with col1:
         fig = px.scatter(
             luck_df,
@@ -150,7 +173,6 @@ if not luck_df.empty:
             margin=dict(l=10, r=10, t=30, b=10),
         )
         st.plotly_chart(fig, use_container_width=True)
-
     with col2:
         st.markdown("### 🍀 Luckiest & Unluckiest Teams")
         sorted_luck = luck_df.sort_values("Luck Δ", ascending=False)
@@ -196,7 +218,6 @@ teams = sorted(power["Team"].dropna().unique())
 selected_team = st.selectbox("Select a team", teams)
 
 if selected_team:
-    # Normalize across all metrics
     scaled = power.copy()
     scaler = MinMaxScaler(feature_range=(0, 100))
     scaled[metrics] = scaler.fit_transform(scaled[metrics])
@@ -221,15 +242,15 @@ if selected_team:
     st.plotly_chart(fig_radar, use_container_width=True)
 
 # -----------------------------------
-# ✅ Suggested Improvements
+# ✅ Suggestions for Future Enhancements
 # -----------------------------------
 with st.expander("💡 Suggestions for Future Enhancements"):
     st.markdown(
         """
-        - Add a **trend tracker** over time to visualize weekly Power Index or Luck changes.  
-        - Include a **SoS Impact chart** (overlay Power Index vs Strength of Schedule).  
-        - Use a **regression trendline** to quantify Luck vs Performance slope per team.  
-        - Introduce **clustering** to group teams with similar stat profiles.  
-        - Optionally, connect to weekly matchup pages to dynamically update analytics.
+        - Add a **trend tracker** for weekly Power Index and Luck Δ over time.
+        - Include a **SoS Influence Chart** comparing Power Index vs SoS Played.
+        - Use **regression lines** to quantify correlation strength.
+        - Cluster teams with similar Power Index profiles.
+        - Add **multi-metric radar overlay** for comparing two teams.
         """
     )

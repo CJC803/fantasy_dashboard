@@ -295,7 +295,14 @@ fig_cluster = px.scatter_3d(
     color_continuous_scale="Blues",
     title="Team Clusters by Power Profile",
 )
-fig_cluster.update_layout(margin=dict(l=10, r=10, t=40, b=10))
+# Force x-axis to show best (higher) on the right
+fig_cluster.update_layout(
+    scene=dict(
+        xaxis=dict(title="Power Index →", autorange=True),  # left→right
+        yaxis=dict(title="Avg Margin"),
+        zaxis=dict(title="SoS Played"),
+    ),
+    margin=dict(l=10, r=10, t=40, b=10)
 st.plotly_chart(fig_cluster, use_container_width=True)
 
 with st.expander("📋 Cluster Breakdown"):

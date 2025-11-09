@@ -23,13 +23,16 @@ if power.empty:
     st.warning("No power ranking data found.")
     st.stop()
 
-# -----------------------------------
-# Normalize Columns
-# -----------------------------------
-power.columns = power.columns.astype(str).str.strip()
-power.columns = power.columns.str.replace(r"\s+", " ", regex=True)
-power.columns = power.columns.str.replace("\u00a0", " ", regex=False)
-
+# --- Normalize Columns (stronger cleanup) ---
+power.columns = (
+    power.columns.astype(str)
+    .str.strip()
+    .str.replace(r"\s+", " ", regex=True)
+    .str.replace("\u00a0", " ", regex=False)
+    .str.replace("\ufeff", "", regex=False)  # remove hidden BOM
+    .str.replace("SoSΔvsAvg", "SoS Δ vs Avg", regex=False)  # safeguard merges
+)
+st.write("Detected columns:", list(power.columns))
 rename_map = {
     "Actual Win": "Actual Win %",
     "Actual Win%": "Actual Win %",

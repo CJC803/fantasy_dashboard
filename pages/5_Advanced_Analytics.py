@@ -236,20 +236,33 @@ if team_a and team_b:
     row_b = scaled[scaled["Team"] == team_b].iloc[0]
 
     fig_compare = go.Figure()
-    fig_compare.add_trace(
-        go.Scatterpolar(r=[row_a[m] for m in metrics], theta=metrics, fill='toself', name=team_a)
-    )
-    fig_compare.add_trace(
-        go.Scatterpolar(r=[row_b[m] for m in metrics], theta=metrics, fill='toself', name=team_b)
-    )
 
-    fig_compare.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
-        showlegend=True,
-        legend=dict(orientation="h", y=-0.2),
-        margin=dict(l=10, r=10, t=30, b=10),
+fig_compare.add_trace(
+    go.Scatterpolar(
+        r=[row_a[m] for m in metrics],
+        theta=metrics,
+        fill='toself',
+        name=team_a
     )
-    st.plotly_chart(fig_compare, use_container_width=True)
+)
+
+fig_compare.add_trace(
+    go.Scatterpolar(
+        r=[row_b[m] for m in metrics],
+        theta=metrics,
+        fill='toself',
+        name=team_b
+    )
+)
+
+fig_compare.update_layout(
+    polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+    showlegend=True,
+    legend=dict(orientation="h", y=-0.2),
+    margin=dict(l=10, r=10, t=30, b=10),
+)
+
+st.plotly_chart(fig_compare, use_container_width=True)
 
 # -----------------------------------
 # 🤖 Team Clustering by Power Metrics

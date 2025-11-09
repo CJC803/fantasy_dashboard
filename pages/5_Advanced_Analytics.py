@@ -31,7 +31,6 @@ power.columns = power.columns.astype(str).str.strip()
 power.columns = power.columns.str.replace(r"\s+", " ", regex=True)
 power.columns = power.columns.str.replace("\u00a0", " ", regex=False)
 
-# Handle minor header differences
 rename_map = {
     "Actual Win": "Actual Win %",
     "Actual Win%": "Actual Win %",
@@ -54,11 +53,9 @@ def clean_percent(series):
             return None
     return pd.Series([to_float(v) for v in series], dtype="float")
 
-# Clean percentage columns
 for pct_col in ["All-Play %", "Actual Win %"]:
     power[pct_col] = clean_percent(power[pct_col])
 
-# Ensure numeric conversions
 numeric_cols = [
     "PF",
     "Avg Margin",
@@ -71,18 +68,38 @@ numeric_cols = [
 for col in numeric_cols:
     power[col] = pd.to_numeric(power[col], errors="coerce")
 
-# Sort by rank
 power.sort_values("Rank", inplace=True)
 power.reset_index(drop=True, inplace=True)
 
 # -----------------------------------
-# Correlation Metric
+# Expanded Correlation Insights
 # -----------------------------------
-if power["Actual Win %"].notna().any() and power["Power Index"].notna().any():
-    corr = power["Power Index"].corr(power["Actual Win %"])
-    st.caption(f"🔗 **Correlation between Power Index and Actual Win %:** {corr:.2f}")
-else:
-    st.caption("🔗 Correlation between Power Index and Actual Win %: N/A")
+st.subheader("📈 Correlation Insights")
+
+corr_metrics = [
+    "All-Play %",
+    "Actual Win %",
+    "Avg Margin",
+    "Recent Form (3-wk avg)",
+    "Recent Margin (3-wk avg)",
+    "SoS (opp PF avg)",
+    "PF",
+]
+corr_df = power[corr_metrics + ["Power Index"]].corr()["Power Index"].drop("Power Index")
+corr_df = corr_df.sort_values(ascending=False).to_frame("Correlation")
+
+st.dataframe(corr_df.style.format("{:.2f}"), use_container_width=True)
+
+fig_corr = px.bar(
+    corr_df,
+    x=corr_df.index,
+    y="Correlation",
+    title="Correlation of Metrics with Power Index",
+    color="Correlation",
+    color_continuous_scale="Blues",
+)
+fig_corr.update_layout(xaxis_title="", yaxis_title="Correlation", showlegend=False)
+st.plotly_chart(fig_corr, use_container_width=True)
 
 # -----------------------------------
 # Luck Chart and Leaderboard
@@ -92,14 +109,13 @@ luck_df = power.dropna(subset=["Actual Win %", "All-Play %"]).copy()
 luck_df["Luck Δ"] = luck_df["Actual Win %"] - luck_df["All-Play %"]
 
 if not luck_df.empty:
-    # Scatter plot
     fig = px.scatter(
         luck_df,
         x="All-Play %",
         y="Actual Win %",
         color="Luck Δ",
         text="Team",
-        color_continuous_scale="Blues_r",
+        color_continuous_scale="RdYlGn",
         hover_data={"Luck Δ": ":.1f"},
     )
     fig.add_shape(
@@ -119,7 +135,6 @@ if not luck_df.empty:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    # Luck table
     with st.expander("🍀 Luckiest vs Unluckiest Teams"):
         luck_table = luck_df[["Team", "All-Play %", "Actual Win %", "Luck Δ"]].copy()
         luck_table["Luck Δ"] = luck_table["Luck Δ"].map(lambda x: f"{x:+.1f}")
@@ -132,16 +147,26 @@ else:
     st.info("Not enough data to compute luck chart.")
 
 # -----------------------------------
-# Team Comparison Radar Chart
+# Enhanced Radar Chart
 # -----------------------------------
-st.subheader("📊 Team Profile Radar")
+st.subheader("📊 Team Performance Radar")
 
 teams = sorted(power["Team"].dropna().unique())
 selected_team = st.selectbox("Select a team", teams)
 
 if selected_team:
     row = power[power["Team"] == selected_team].iloc[0]
-    metrics = ["All-Play %", "Actual Win %", "Avg Margin", "SoS (opp PF avg)"]
+
+    metrics = [
+        "All-Play %",
+        "Actual Win %",
+        "Avg Margin",
+        "Recent Form (3-wk avg)",
+        "Recent Margin (3-wk avg)",
+        "SoS (opp PF avg)",
+        "PF",
+        "Power Index",
+    ]
     radar_values = [row[m] for m in metrics]
 
     fig_radar = go.Figure()
@@ -154,7 +179,7 @@ if selected_team:
         )
     )
     fig_radar.update_layout(
-        polar=dict(radialaxis=dict(visible=True)),
+        polar=dict(radialaxis=dict(visible=True, showticklabels=False)),
         showlegend=False,
         margin=dict(l=10, r=10, t=30, b=10),
     )

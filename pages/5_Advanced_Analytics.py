@@ -72,9 +72,9 @@ power.sort_values("Rank", inplace=True)
 power.reset_index(drop=True, inplace=True)
 
 # -----------------------------------
-# Expanded Correlation Insights
+# Top Factors Correlating with Power Index
 # -----------------------------------
-st.subheader("📈 Correlation Insights")
+st.subheader("📈 Top Factors Driving Power Index")
 
 corr_metrics = [
     "All-Play %",
@@ -85,21 +85,35 @@ corr_metrics = [
     "SoS (opp PF avg)",
     "PF",
 ]
-corr_df = power[corr_metrics + ["Power Index"]].corr()["Power Index"].drop("Power Index")
-corr_df = corr_df.sort_values(ascending=False).to_frame("Correlation")
 
-st.dataframe(corr_df.style.format("{:.2f}"), use_container_width=True)
+corr_df = (
+    power[corr_metrics + ["Power Index"]]
+    .corr(numeric_only=True)["Power Index"]
+    .drop("Power Index")
+    .sort_values(ascending=False)
+    .to_frame("Correlation")
+)
+
+top_corr = corr_df.head(5)
+st.dataframe(top_corr.style.format("{:.2f}"), use_container_width=True)
 
 fig_corr = px.bar(
-    corr_df,
-    x=corr_df.index,
+    top_corr,
+    x=top_corr.index,
     y="Correlation",
-    title="Correlation of Metrics with Power Index",
     color="Correlation",
     color_continuous_scale="Blues",
+    text="Correlation",
 )
-fig_corr.update_layout(xaxis_title="", yaxis_title="Correlation", showlegend=False)
+fig_corr.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+fig_corr.update_layout(
+    title="Top Factors Correlating with Power Index",
+    xaxis_title="",
+    yaxis_title="Correlation",
+    margin=dict(l=10, r=10, t=40, b=10),
+)
 st.plotly_chart(fig_corr, use_container_width=True)
+
 
 # -----------------------------------
 # Luck Chart and Leaderboard
@@ -147,26 +161,33 @@ else:
     st.info("Not enough data to compute luck chart.")
 
 # -----------------------------------
-# Enhanced Radar Chart
+# Normalized Team Performance Radar
 # -----------------------------------
-st.subheader("📊 Team Performance Radar")
+st.subheader("📊 Normalized Team Performance Radar")
+
+from sklearn.preprocessing import MinMaxScaler
 
 teams = sorted(power["Team"].dropna().unique())
 selected_team = st.selectbox("Select a team", teams)
 
-if selected_team:
-    row = power[power["Team"] == selected_team].iloc[0]
+metrics = [
+    "All-Play %",
+    "Actual Win %",
+    "Avg Margin",
+    "Recent Form (3-wk avg)",
+    "Recent Margin (3-wk avg)",
+    "SoS (opp PF avg)",
+    "PF",
+    "Power Index",
+]
 
-    metrics = [
-        "All-Play %",
-        "Actual Win %",
-        "Avg Margin",
-        "Recent Form (3-wk avg)",
-        "Recent Margin (3-wk avg)",
-        "SoS (opp PF avg)",
-        "PF",
-        "Power Index",
-    ]
+if selected_team:
+    # Normalize values 0–100 across all teams
+    scaled = power.copy()
+    scaler = MinMaxScaler(feature_range=(0, 100))
+    scaled[metrics] = scaler.fit_transform(scaled[metrics])
+
+    row = scaled[scaled["Team"] == selected_team].iloc[0]
     radar_values = [row[m] for m in metrics]
 
     fig_radar = go.Figure()
@@ -179,8 +200,9 @@ if selected_team:
         )
     )
     fig_radar.update_layout(
-        polar=dict(radialaxis=dict(visible=True, showticklabels=False)),
+        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
         showlegend=False,
         margin=dict(l=10, r=10, t=30, b=10),
     )
     st.plotly_chart(fig_radar, use_container_width=True)
+

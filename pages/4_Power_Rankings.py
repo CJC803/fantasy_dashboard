@@ -147,40 +147,6 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # -----------------------------------
-# Luck Chart
-# -----------------------------------
-st.subheader("🍀 Luck Index — Actual Win % vs All-Play %")
-
-luck_df = power.dropna(subset=["Actual Win %", "All-Play %"]).copy()
-luck_df["Luck Δ"] = luck_df["Actual Win %"] - luck_df["All-Play %"]
-
-fig2 = px.scatter(
-    luck_df,
-    x="All-Play %",
-    y="Actual Win %",
-    color="Luck Δ",
-    text="Team",
-    color_continuous_scale="Blues_r",
-    hover_data={"Luck Δ": ":.1f"},
-)
-fig2.add_shape(
-    type="line",
-    x0=luck_df["All-Play %"].min(),
-    y0=luck_df["All-Play %"].min(),
-    x1=luck_df["All-Play %"].max(),
-    y1=luck_df["All-Play %"].max(),
-    line=dict(color="gray", dash="dash"),
-)
-fig2.update_traces(textposition="top center", marker=dict(size=10))
-fig2.update_layout(
-    xaxis_title="All-Play %",
-    yaxis_title="Actual Win %",
-    coloraxis_colorbar_title="Luck Δ",
-    margin=dict(l=10, r=10, t=30, b=10),
-)
-st.plotly_chart(fig2, use_container_width=True)
-
-# -----------------------------------
 # Table
 # -----------------------------------
 st.subheader("📋 Full Power Rankings — Table")

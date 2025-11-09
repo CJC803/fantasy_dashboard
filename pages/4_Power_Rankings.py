@@ -18,7 +18,7 @@ if "data" not in st.session_state:
 
 data = st.session_state["data"]
 power = data.get("power", pd.DataFrame())
-#st.write("Raw columns from load_all():", list(power.columns))
+
 if power.empty:
     st.warning("No power ranking data found.")
     st.stop()
@@ -30,7 +30,6 @@ power.columns = power.columns.astype(str).str.strip()
 power.columns = power.columns.str.replace(r"\s+", " ", regex=True)
 power.columns = power.columns.str.replace("\u00a0", " ", regex=False)
 
-# In case of minor header differences
 rename_map = {
     "Actual Win": "Actual Win %",
     "Actual Win%": "Actual Win %",
@@ -47,10 +46,11 @@ expected_cols = [
     "Avg Margin",
     "Recent Form (3-wk avg)",
     "Recent Margin (3-wk avg)",
-    "SoS (opp PF avg)",
+    "SoS Played",
+    "SoS Remaining",
+    "SoS Δ vs Avg",
     "Power Index",
 ]
-
 missing = [c for c in expected_cols if c not in power.columns]
 if missing:
     st.error(f"Missing columns: {', '.join(missing)}")
@@ -58,10 +58,9 @@ if missing:
     st.stop()
 
 # -----------------------------------
-# Helper Function
+# Helper Functions
 # -----------------------------------
 def clean_percent(series):
-    """Converts messy % strings or decimals into numeric 0–100."""
     def to_float(x):
         if pd.isna(x):
             return None
@@ -76,22 +75,28 @@ def clean_percent(series):
 # -----------------------------------
 # Data Cleanup
 # -----------------------------------
-power["All-Play %"] = clean_percent(power["All-Play %"])
-power["Actual Win %"] = clean_percent(power["Actual Win %"])
+for pct_col in ["All-Play %", "Actual Win %"]:
+    power[pct_col] = clean_percent(power[pct_col])
 
 numeric_cols = [
     "PF",
     "Avg Margin",
     "Recent Form (3-wk avg)",
     "Recent Margin (3-wk avg)",
-    "SoS (opp PF avg)",
+    "SoS Played",
+    "SoS Remaining",
+    "SoS Δ vs Avg",
     "Power Index",
     "Rank",
 ]
 for col in numeric_cols:
     power[col] = pd.to_numeric(power[col], errors="coerce")
 
-# Sort by rank
+# Rank SoS metrics (1 = hardest / highest)
+for col in ["SoS Played", "SoS Remaining", "SoS Δ vs Avg"]:
+    if col in power.columns:
+        power[f"{col} Rank"] = power[col].rank(method="min", ascending=False).astype(int)
+
 power.sort_values("Rank", inplace=True)
 power.reset_index(drop=True, inplace=True)
 
@@ -108,14 +113,39 @@ best_form_team = power.loc[power["Recent Form (3-wk avg)"].idxmax(), "Team"]
 best_form_value = power["Recent Form (3-wk avg)"].max()
 col4.metric("Best 3-Week Avg PF", f"{best_form_value:.1f}", best_form_team)
 
-with st.expander("🔎 Extra Insights"):
+# -----------------------------------
+# Extended Insights
+# -----------------------------------
+with st.expander("🔎 Advanced Insights"):
     c1, c2, c3 = st.columns(3)
-    ap = power.loc[power["All-Play %"].idxmax()]
-    win = power.loc[power["Actual Win %"].idxmax()]
-    sos = power.loc[power["SoS (opp PF avg)"].idxmax()]
-    c1.metric("Best All-Play %", f"{ap['All-Play %']:.1f}%", ap["Team"])
-    c2.metric("Best Actual Win %", f"{win['Actual Win %']:.1f}%", win["Team"])
-    c3.metric("Hardest SoS", f"{sos['SoS (opp PF avg)']:.1f}", sos["Team"])
+
+    # 1. Luck metric
+    if "Actual Win %" in power.columns and "All-Play %" in power.columns:
+        power["Luck Δ"] = power["Actual Win %"] - power["All-Play %"]
+        luckiest = power.loc[power["Luck Δ"].idxmax()]
+        unluckiest = power.loc[power["Luck Δ"].idxmin()]
+        c1.metric("Luckiest Team", luckiest["Team"], f"{luckiest['Luck Δ']:+.1f}%")
+        c2.metric("Unluckiest Team", unluckiest["Team"], f"{unluckiest['Luck Δ']:+.1f}%")
+
+    # 2. SoS extremes
+    hardest_remaining = power.loc[power["SoS Remaining"].idxmax()]
+    easiest_remaining = power.loc[power["SoS Remaining"].idxmin()]
+    c3.metric("Toughest Remaining SoS", hardest_remaining["Team"], f"{hardest_remaining['SoS Remaining']:.1f}")
+
+    c4, c5, c6 = st.columns(3)
+    # 3. Biggest margin performer
+    margin_team = power.loc[power["Avg Margin"].idxmax()]
+    c4.metric("Biggest Avg Margin", f"{margin_team['Avg Margin']:.1f}", margin_team["Team"])
+
+    # 4. Overperformer vs SoS (high Power Index + high SoS)
+    if "Power Index" in power.columns:
+        overperform = power.assign(
+            Combined=lambda x: x["Power Index"] + x["SoS Played"]
+        ).sort_values("Combined", ascending=False).iloc[0]
+        c5.metric("Overperformer (Power+SoS)", overperform["Team"], f"{overperform['Power Index']:.2f}")
+
+    # 5. Power Index stability
+    c6.metric("Power Index Range", f"{power['Power Index'].min():.2f}–{power['Power Index'].max():.2f}")
 
 # -----------------------------------
 # Power Index Chart
@@ -136,6 +166,9 @@ fig = px.bar(
         "Actual Win %": ":.1f",
         "Avg Margin": ":.1f",
         "PF": ":.0f",
+        "SoS Played": ":.1f",
+        "SoS Remaining": ":.1f",
+        "SoS Δ vs Avg": ":.1f",
         "Power Index": ":.2f",
     },
 )
@@ -159,8 +192,8 @@ display["Avg Margin"] = display["Avg Margin"].map(lambda x: f"{x:.1f}" if pd.not
 display["Power Index"] = display["Power Index"].map(lambda x: f"{x:.2f}" if pd.notna(x) else "")
 display["Recent Form (3-wk avg)"] = display["Recent Form (3-wk avg)"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
 display["Recent Margin (3-wk avg)"] = display["Recent Margin (3-wk avg)"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
-display["SoS (opp PF avg)"] = display["SoS (opp PF avg)"].map(lambda x: f"{x:.1f}" if pd.notna(x) else "")
 
+# Rank columns instead of raw SoS
 display = display[
     [
         "Rank",
@@ -172,7 +205,9 @@ display = display[
         "Avg Margin",
         "Recent Form (3-wk avg)",
         "Recent Margin (3-wk avg)",
-        "SoS (opp PF avg)",
+        "SoS Played Rank",
+        "SoS Remaining Rank",
+        "SoS Δ vs Avg Rank",
     ]
 ]
 st.dataframe(display, use_container_width=True, hide_index=True)

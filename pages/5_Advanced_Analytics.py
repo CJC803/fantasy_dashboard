@@ -99,7 +99,7 @@ if not luck_df.empty:
         y="Actual Win %",
         color="Luck Δ",
         text="Team",
-        color_continuous_scale="RdYlGn",
+        color_continuous_scale="Blues_r",
         hover_data={"Luck Δ": ":.1f"},
     )
     fig.add_shape(

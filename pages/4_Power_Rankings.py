@@ -18,7 +18,7 @@ if "data" not in st.session_state:
 
 data = st.session_state["data"]
 power = data.get("power", pd.DataFrame())
-
+st.write("Raw columns from load_all():", list(power.columns))
 if power.empty:
     st.warning("No power ranking data found.")
     st.stop()

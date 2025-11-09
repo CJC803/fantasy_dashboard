@@ -147,7 +147,7 @@ luck_df["Luck Δ"] = luck_df["Actual Win %"] - luck_df["All-Play %"]
 if not luck_df.empty:
     col1, col2 = st.columns([3, 2])
     with col1:
-        fig = px.scatter(
+fig = px.scatter(
     luck_df,
     x="All-Play %",
     y="Actual Win %",

@@ -295,15 +295,20 @@ fig_cluster = px.scatter_3d(
     color_continuous_scale="Blues",
     title="Team Clusters by Power Profile",
 )
+
+# Ensure strongest teams (highest Power Index) appear on the right side
+fig_cluster.update_traces(marker=dict(size=6))
 fig_cluster.update_layout(
-    margin=dict(l=10, r=10, t=40, b=10)
+    scene=dict(
+        xaxis=dict(
+            title="Power Index (→ Better Teams →)",
+            autorange="reversed",  # flip axis so better = right
+            backgroundcolor="rgba(0,0,0,0)"
+        ),
+        yaxis=dict(title="Avg Margin", backgroundcolor="rgba(0,0,0,0)"),
+        zaxis=dict(title="SoS Played", backgroundcolor="rgba(0,0,0,0)")
+    ),
+    margin=dict(l=10, r=10, t=40, b=10),
 )
 st.plotly_chart(fig_cluster, use_container_width=True)
-
-with st.expander("📋 Cluster Breakdown"):
-    st.dataframe(
-        cluster_df[["Team", "Cluster"] + cluster_features],
-        use_container_width=True,
-        hide_index=True,
-    )
 

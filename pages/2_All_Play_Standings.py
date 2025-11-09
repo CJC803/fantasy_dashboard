@@ -51,16 +51,26 @@ else:
             trend_available = False
 
         # === Step 3: KPI metrics ===
-        top_team = merged.iloc[0]["Team"]
-        top_win = merged.iloc[0]["Win%"]
+        # Drop any rows missing key stats
+        merged = merged.dropna(subset=["Team", "Win%"])
         
-        bottom_team = merged.iloc[-1]["Team"]
-        bottom_win = merged.iloc[-1]["Win%"]
+        if not merged.empty:
+            top_team = merged.iloc[0]["Team"]
+            top_win = merged.iloc[0]["Win%"]
         
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Teams Tracked", len(merged))
-        c2.metric("Lowest All-Play Team", f"{bottom_team} ({bottom_win:.3f})")
-        c3.metric("Top Team", f"{top_team} ({top_win:.3f})")
+            bottom_team = merged.iloc[-1]["Team"]
+            bottom_win = merged.iloc[-1]["Win%"]
+        
+            # Handle non-numeric or missing values
+            top_win = float(top_win) if pd.notna(top_win) else 0
+            bottom_win = float(bottom_win) if pd.notna(bottom_win) else 0
+        
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Teams Tracked", len(merged))
+            c2.metric("Lowest All-Play Team", f"{bottom_team} ({bottom_win:.3f})")
+            c3.metric("Top Team", f"{top_team} ({top_win:.3f})")
+        else:
+            st.warning("⚠️ No valid teams or Win% data available.")
 
         if trend_available:
             avg_delta = merged["Δ Win%"].mean()
